@@ -3,7 +3,7 @@
 
 ### NextJS ###
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.js
 
@@ -76,5 +76,10 @@ tags
 # Ignore all local history of files
 .history
 .ionide
+
+# Env
+.env
+.env.*
+!.env.example
 
 # End of https://www.toptal.com/developers/gitignore/api/nextjs,vim,visualstudiocode

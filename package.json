@@ -1,0 +1,19 @@
+{
+  "name": "Breezy",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "dev:gateway": "pnpm --filter gateway dev",
+    "dev:auth": "pnpm --filter auth-svc dev",
+    "dev:user": "pnpm --filter user-svc dev",
+    "dev:post": "pnpm --filter post-svc dev",
+    "dev:notif": "pnpm --filter notif-svc dev",
+    "dev:front": "pnpm --filter front dev",
+    "docker:up": "docker compose up --build"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}

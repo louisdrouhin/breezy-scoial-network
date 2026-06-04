@@ -1,0 +1,4 @@
+packages:
+  - 'microservices/*'
+  - 'gateway'
+  - 'front'
