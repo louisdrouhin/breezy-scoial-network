@@ -1,9 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export default function PostBar() {
   const [text, setText] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [text]);
 
   return (
     <div
@@ -15,28 +23,41 @@ export default function PostBar() {
         marginBottom: '20px',
       }}
     >
-      <textarea
-        value={text}
-        onChange={(e) => {
-          if (e.target.value.length <= 280) {
-            setText(e.target.value);
-          }
-        }}
-        placeholder="Something to say?"
-        maxLength={280}
-        style={{
-          width: '100%',
-          minHeight: '100px',
-          padding: '12px',
-          border: 'none',
-          borderRadius: '4px',
-          fontFamily: 'var(--font-alata)',
-          color: '#1A4731',
-          fontSize: '16px',
-          resize: 'vertical',
-          outline: 'none',
-        }}
-      />
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+        <div
+          style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: '#1A4731',
+            flexShrink: 0,
+          }}
+        />
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={(e) => {
+            if (e.target.value.length <= 280) {
+              setText(e.target.value);
+            }
+          }}
+          placeholder="Something to say?"
+          maxLength={280}
+          style={{
+            flex: 1,
+            minHeight: '100px',
+            padding: '12px',
+            border: 'none',
+            borderRadius: '4px',
+            fontFamily: 'var(--font-alata)',
+            color: '#1A4731',
+            fontSize: '16px',
+            resize: 'none',
+            outline: 'none',
+            overflow: 'hidden',
+          }}
+        />
+      </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
         {(() => {
           const remaining = 280 - text.length;

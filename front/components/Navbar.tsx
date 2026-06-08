@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { House, CircleUser, Bell } from "lucide-react";
+import { House, CircleUser, Bell, LogOut } from "lucide-react";
 
 export default function Navbar() {
   return (
@@ -59,6 +59,48 @@ export default function Navbar() {
         <Bell size={24} />
         <span>Notifications</span>
       </Link>
+
+      <div
+        style={{
+          marginTop: "auto",
+          paddingTop: "16px",
+          paddingBottom: "12px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.2)",
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          paddingLeft: "12px",
+        }}
+      >
+        <div
+          style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            backgroundColor: "rgba(255, 255, 255, 0.3)",
+            flexShrink: 0,
+          }}
+        />
+        <span style={{ color: "white", fontFamily: "var(--font-alata)" }}>
+          User Name
+        </span>
+        <button
+          style={{
+            padding: "6px",
+            backgroundColor: "transparent",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: "auto",
+          }}
+        >
+          <LogOut size={20} />
+        </button>
+      </div>
     </div>
   );
 }
