@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, MessageCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Heart, MessageCircle, Share2 } from 'lucide-react';
 
 interface PostProps {
   id?: string;
@@ -25,6 +26,7 @@ export default function Post({
   const [likes, setLikes] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [comments, setComments] = useState(initialComments);
+  const [copied, setCopied] = useState(false);
 
   const handleLike = () => {
     if (isLiked) {
@@ -48,6 +50,13 @@ export default function Post({
     if (diffDays < 7) return `${diffDays}d ago`;
 
     return date.toLocaleDateString();
+  };
+
+  const copyToClipboard = (id: string, author: string) => {
+    const url = `${window.location.origin}/${author}/status/${id}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -80,26 +89,32 @@ export default function Post({
         />
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <p
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-rubik)',
-                color: '#1A4731',
-                fontWeight: 'bold',
-              }}
-            >
-              {displayName}
-            </p>
-            <p
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-alata)',
-                color: '#999',
-                fontSize: '12px',
-              }}
-            >
-              @{username}
-            </p>
+            <Link href={`/profile/${username}`} style={{ textDecoration: 'none' }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-rubik)',
+                  color: '#1A4731',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                }}
+              >
+                {displayName}
+              </p>
+            </Link>
+            <Link href={`/profile/${username}`} style={{ textDecoration: 'none' }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-alata)',
+                  color: '#999',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+              >
+                @{username}
+              </p>
+            </Link>
           </div>
           <p
             style={{
@@ -114,25 +129,27 @@ export default function Post({
         </div>
       </div>
 
-      {/* Post content */}
-      <p
-        style={{
-          fontFamily: 'var(--font-alata)',
-          color: '#1A4731',
-          marginBottom: '16px',
-          lineHeight: '1.5',
-        }}
-      >
-        {content}
-      </p>
+      {/* Post content - clickable */}
+      <Link href={`/${username}/status/${id}`} style={{ textDecoration: 'none' }}>
+        <p
+          style={{
+            fontFamily: 'var(--font-alata)',
+            color: '#1A4731',
+            marginBottom: '16px',
+            lineHeight: '1.5',
+            cursor: 'pointer',
+          }}
+        >
+          {content}
+        </p>
+      </Link>
 
       {/* Actions */}
       <div
         style={{
           display: 'flex',
           gap: '24px',
-          paddingTop: '12px',
-          borderTop: '1px solid #F4F5F4',
+          marginTop: '12px',
           justifyContent: 'flex-end',
         }}
       >
@@ -157,23 +174,66 @@ export default function Post({
           </span>
         </button>
 
-        <button
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-            color: '#1A4731',
-          }}
-        >
-          <MessageCircle size={18} style={{ color: '#1A4731' }} />
-          <span style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '14px' }}>
-            {comments}
-          </span>
-        </button>
+        <Link href={`/${username}/status/${id}`} style={{ textDecoration: 'none' }}>
+          <button
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              color: '#1A4731',
+            }}
+          >
+            <MessageCircle size={18} style={{ color: '#1A4731' }} />
+            <span style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '14px' }}>
+              {comments}
+            </span>
+          </button>
+        </Link>
+
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => copyToClipboard(id, username)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              color: '#1A4731',
+            }}
+          >
+            <Share2 size={18} style={{ color: '#1A4731' }} />
+          </button>
+          {copied && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '-35px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: '#6CB583',
+                color: '#ffffff',
+                padding: '8px 14px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontFamily: 'var(--font-alata)',
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap',
+                zIndex: 9999,
+                pointerEvents: 'none',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              }}
+            >
+              Copied!
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import PostBar from "@/components/PostBar";
 import SearchBar from "@/components/SearchBar";
 import Subscriptions from "@/components/Subscriptions";
@@ -53,6 +54,41 @@ export default function Home() {
       <div style={{ flex: "0 0 20%" }} className="home-sidebar">
         <SearchBar />
         <Subscriptions />
+
+        {/* Legal Links */}
+        <div
+          style={{
+            display: "flex",
+            gap: "16px",
+            marginBottom: "24px",
+            marginTop: "16px",
+            justifyContent: "center",
+          }}
+        >
+          <Link
+            href="/privacy-policy"
+            style={{
+              fontFamily: "var(--font-alata)",
+              color: "#1A4731",
+              fontSize: "12px",
+              textDecoration: "none",
+            }}
+          >
+            Privacy Policy
+          </Link>
+          <span style={{ color: "#E0E0E0" }}>•</span>
+          <Link
+            href="/terms-of-service"
+            style={{
+              fontFamily: "var(--font-alata)",
+              color: "#1A4731",
+              fontSize: "12px",
+              textDecoration: "none",
+            }}
+          >
+            Terms of Service
+          </Link>
+        </div>
       </div>
     </div>
   );

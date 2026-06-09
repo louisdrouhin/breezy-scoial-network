@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import MobileHeader from '@/components/MobileHeader';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import MobileBottomBar from '@/components/MobileBottomBar';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -25,7 +25,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
           {/* Mobile Bottom Nav */}
           <div className="mobile-bottom-nav">
-            <MobileBottomNav />
+            <MobileBottomBar />
           </div>
         </>
       )}

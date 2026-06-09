@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { House, CircleUser, Bell, LogOut } from "lucide-react";
+import { House, CircleUser, Bell, Settings, LogOut } from "lucide-react";
 
 export default function Navbar() {
   return (
@@ -10,9 +10,9 @@ export default function Navbar() {
       className="fixed left-4 top-4 bottom-4 w-72 h-auto bg-[#1A4731] p-6 flex flex-col gap-8 rounded-lg"
       style={{ alignItems: "flex-start" }}
     >
-      <div style={{ paddingLeft: "12px" }}>
+      <Link href="/" style={{ paddingLeft: "12px" }}>
         <Image src="/Breezy-Logo.svg" alt="Logo" width={300} height={300} />
-      </div>
+      </Link>
 
       <Link
         href="/"
@@ -58,6 +58,21 @@ export default function Navbar() {
       >
         <Bell size={24} />
         <span>Notifications</span>
+      </Link>
+      <Link
+        href="/settings"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          color: "white",
+          textDecoration: "none",
+          paddingLeft: "24px",
+        }}
+        className="font-rubik"
+      >
+        <Settings size={24} />
+        <span>Settings</span>
       </Link>
 
       <div

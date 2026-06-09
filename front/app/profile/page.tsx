@@ -19,13 +19,15 @@ export default function Profile() {
       <div
         style={{ flex: '0 0 100%', paddingRight: '20px', paddingLeft: '20px' }}
       >
-        <ProfileHeader
-          displayName="John Doe"
-          username="johndoe"
-          bio="Creative developer & digital enthusiast. Building amazing things on the web 🚀"
-          followers={2345}
-          following={876}
-        />
+        <div className="profile-header" style={{ marginTop: '-20px' }}>
+          <ProfileHeader
+            displayName="John Doe"
+            username="johndoe"
+            bio="Creative developer & digital enthusiast. Building amazing things on the web 🚀"
+            followers={2345}
+            following={876}
+          />
+        </div>
 
         {/* User Posts */}
         <div style={{ marginBottom: '24px' }}>
