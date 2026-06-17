@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  # PostgreSQL (for auth-svc and user-svc)
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB (for post-svc, notif-svc, feed-svc)
+  mongodb:
+    image: mongo:7-alpine
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service (PostgreSQL)
+  auth-svc:
+    build:
+      context: ./microservices/auth-svc
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_svc?schema=public
+      PORT: 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # User Service (PostgreSQL)
+  user-svc:
+    build:
+      context: ./microservices/user-svc
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/user_svc?schema=public
+      PORT: 3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Post Service (MongoDB)
+  post-svc:
+    build:
+      context: ./microservices/post-svc
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      MONGODB_URI: mongodb://admin:admin@mongodb:27017/post_svc?authSource=admin
+      PORT: 3003
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Notification Service (MongoDB)
+  notif-svc:
+    build:
+      context: ./microservices/notif-svc
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      MONGODB_URI: mongodb://admin:admin@mongodb:27017/notif_svc?authSource=admin
+      PORT: 3004
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Feed Service (MongoDB)
+  feed-svc:
+    build:
+      context: ./microservices/feed-svc
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      MONGODB_URI: mongodb://admin:admin@mongodb:27017/feed_svc?authSource=admin
+      PORT: 3005
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost
+    depends_on:
+      - auth-svc
+      - user-svc
+      - post-svc
+      - notif-svc
+      - feed-svc
+    networks:
+      - app-network
+
+  # Nginx Gateway
+  nginx:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-svc
+      - user-svc
+      - post-svc
+      - notif-svc
+      - feed-svc
+      - frontend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongodb_data:
