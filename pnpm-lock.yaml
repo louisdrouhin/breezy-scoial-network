@@ -46,12 +46,6 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  gateway:
-    dependencies:
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1
-
   microservices/auth-svc:
     dependencies:
       '@prisma/client':
@@ -65,8 +59,27 @@ importers:
         version: 5.2.1
     devDependencies:
       '@types/node':
-        specifier: ^20.19.41
-        version: 20.19.41
+        specifier: ^25.9.2
+        version: 25.9.2
+      prisma:
+        specifier: ~6.19.3
+        version: 6.19.3(typescript@5.9.3)
+
+  microservices/feed-svc:
+    dependencies:
+      '@prisma/client':
+        specifier: ~6.19.3
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1
+    devDependencies:
+      '@types/node':
+        specifier: ^25.9.2
+        version: 25.9.2
       prisma:
         specifier: ~6.19.3
         version: 6.19.3(typescript@5.9.3)
@@ -127,67 +140,6 @@ importers:
       prisma:
         specifier: ~6.19.3
         version: 6.19.3(typescript@5.9.3)
-
-  packages/auth-svc:
-    dependencies:
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1
-
-  packages/front:
-    dependencies:
-      next:
-        specifier: 16.2.7
-        version: 16.2.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react:
-        specifier: 19.2.4
-        version: 19.2.4
-      react-dom:
-        specifier: 19.2.4
-        version: 19.2.4(react@19.2.4)
-    devDependencies:
-      '@tailwindcss/postcss':
-        specifier: ^4
-        version: 4.3.0
-      '@types/node':
-        specifier: ^20
-        version: 20.19.41
-      '@types/react':
-        specifier: ^19
-        version: 19.2.16
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.2.3(@types/react@19.2.16)
-      tailwindcss:
-        specifier: ^4
-        version: 4.3.0
-      typescript:
-        specifier: ^5
-        version: 5.9.3
-
-  packages/gateway:
-    dependencies:
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1
-
-  packages/notif-svc:
-    dependencies:
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1
-
-  packages/post-svc:
-    dependencies:
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1
-
-  packages/user-svc:
-    dependencies:
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1
 
 packages:
 

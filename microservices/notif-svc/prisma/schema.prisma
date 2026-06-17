@@ -1,0 +1,52 @@
+// ==========================================================
+// notifs-svc — schema.prisma
+// Moteur : MongoDB (NoSQL)
+//
+// Justification fonctionnelle :
+//   - très fort volume d'écriture (chaque like, follow, mention
+//     génère une notification -> Fx14, Fx15, Fx16)
+//   - lecture simple : liste chronologique paginée, pas de
+//     jointure complexe nécessaire
+//   - le "payload" de la notification varie selon son type
+//     (mention -> postId concerné, like -> postId + auteur du
+//     like, follow -> juste l'auteur) -> schéma flexible utile
+// ==========================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+enum NotificationType {
+  MENTION
+  LIKE
+  NEW_FOLLOWER
+  COMMENT
+}
+
+model Notification {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Clé de cohérence : destinataire de la notification
+  recipientUsername String @map("recipient_username")
+
+  // Clé de cohérence : auteur de l'action (qui a liké, suivi...)
+  actorUsername String? @map("actor_username")
+
+  type NotificationType
+
+  // Référence souple vers le post concerné (post racine ou
+  // commentaire, les deux sont une même entité Post côté
+  // post-svc depuis son modèle unifié). Pas de FK cross-service
+  // en MongoDB : on stocke juste l'id externe.
+  relatedPostId String? @map("related_post_id")
+
+  read Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
