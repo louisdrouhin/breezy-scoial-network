@@ -1,3 +1,5 @@
 packages:
   - 'microservices/*'
   - 'front'
+
+injectWorkspacePackages: true

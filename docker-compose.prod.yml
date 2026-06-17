@@ -6,21 +6,18 @@ services:
   # ============================================================
   auth-postgres:
     image: postgres:16-alpine
-    container_name: auth-postgres
-    profiles:
-      - auth
+    container_name: auth-postgres-prod
     environment:
       POSTGRES_USER: ${AUTH_DB_USER}
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
       POSTGRES_DB: auth_svc
     env_file:
-      - .env
-    ports:
-      - "5432:5432"
+      - .env.prod
     volumes:
       - auth-svc-db:/var/lib/postgresql/data
     networks:
       - backend
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -32,48 +29,34 @@ services:
       context: .
       dockerfile: Dockerfile
       target: auth-svc
-    container_name: auth-svc
-    profiles:
-      - auth
-    ports:
-      - "3001:3001"
+    container_name: auth-svc-prod
     environment:
       DATABASE_URL: postgresql://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@auth-postgres:5432/auth_svc?schema=public
       PORT: 3001
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRY: ${JWT_EXPIRY}
     env_file:
-      - .env
-    volumes:
-      - ./microservices/auth-svc/src:/prod/auth-svc/src
-      - ./microservices/auth-svc/prisma:/prod/auth-svc/prisma
-    command: pnpm dev
+      - .env.prod
     depends_on:
       auth-postgres:
         condition: service_healthy
     networks:
       - backend
+    restart: always
 
   # ============================================================
   # USER SERVICE STACK
   # ============================================================
   user-postgres:
     image: postgres:16-alpine
-    container_name: user-postgres
-    profiles:
-      - user
+    container_name: user-postgres-prod
     environment:
-      POSTGRES_USER: ${USER_DB_USER}
-      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_DB: user_svc
-    env_file:
-      - .env
-    ports:
-      - "5433:5432"
     volumes:
       - user-svc-db:/var/lib/postgresql/data
     networks:
-      - frontend
+      - backend
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -83,118 +66,99 @@ services:
   user-svc:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: user-svc
-    container_name: user-svc
-    profiles:
-      - user
-    ports:
-      - "3002:3002"
+      dockerfile: microservices/user-svc/Dockerfile
+    container_name: user-svc-prod
     environment:
       DATABASE_URL: postgresql://postgres:postgres@user-postgres:5432/user_svc?schema=public
       PORT: 3002
-    volumes:
-      - ./microservices/user-svc/src:/prod/user-svc/src
-      - ./microservices/user-svc/prisma:/prod/user-svc/prisma
-    command: pnpm dev
     depends_on:
       user-postgres:
         condition: service_healthy
     networks:
-      - frontend
+      - backend
+    restart: always
 
   # ============================================================
   # POST SERVICE STACK
   # ============================================================
   post-mongo:
     image: mongo:7-alpine
-    container_name: post-mongo
-    profiles:
-      - post
+    container_name: post-mongo-prod
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${POST_MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${POST_MONGO_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
       MONGO_INITDB_DATABASE: post_svc
-    env_file:
-      - .env
-    ports:
-      - "27017:27017"
     volumes:
       - post-svc-db:/data/db
     networks:
-      - frontend
+      - backend
+    restart: always
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+    env_file:
+      - .env.prod
 
   post-svc:
     build:
       context: .
       dockerfile: Dockerfile
       target: post-svc
-    container_name: post-svc
-    profiles:
-      - post
-    ports:
-      - "3003:3003"
+    container_name: post-svc-prod
     environment:
-      MONGODB_URI: mongodb://admin:admin@post-mongo:27017/post_svc?authSource=admin
+      MONGODB_URI: mongodb://admin:password@post-mongo:27017/post_svc?authSource=admin
       PORT: 3003
-    volumes:
-      - ./microservices/post-svc/src:/prod/post-svc/src
-    command: pnpm dev
+    env_file:
+      - .env.prod
     depends_on:
       post-mongo:
         condition: service_healthy
     networks:
-      - frontend
+      - backend
+    restart: always
 
   # ============================================================
   # NOTIFICATION SERVICE STACK
   # ============================================================
   notif-mongo:
     image: mongo:7-alpine
-    container_name: notif-mongo
-    profiles:
-      - notif
+    container_name: notif-mongo-prod
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${NOTIF_MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${NOTIF_MONGO_PASSWORD}
-    ports:
-      - "27018:27017"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: notif_svc
     volumes:
       - notif-svc-db:/data/db
     networks:
-      - frontend
+      - backend
+    restart: always
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+    env_file:
+      - .env.prod
 
   notif-svc:
     build:
       context: .
       dockerfile: Dockerfile
       target: notif-svc
-    container_name: notif-svc
-    profiles:
-      - notif
-    ports:
-      - "3004:3004"
+    container_name: notif-svc-prod
     environment:
-      MONGODB_URI: mongodb://admin:admin@notif-mongo:27017/notif_svc?authSource=admin
+      MONGODB_URI: mongodb://admin:password@notif-mongo:27017/notif_svc?authSource=admin
       PORT: 3004
-    volumes:
-      - ./microservices/notif-svc/src:/prod/notif-svc/src
-    command: pnpm dev
+    env_file:
+      - .env.prod
     depends_on:
       notif-mongo:
         condition: service_healthy
     networks:
-      - frontend
+      - backend
+    restart: always
 
   # ============================================================
   # FEED SERVICE (no DB)
@@ -204,18 +168,12 @@ services:
       context: .
       dockerfile: Dockerfile
       target: feed-svc
-    container_name: feed-svc
-    profiles:
-      - feed
-    ports:
-      - "3005:3005"
+    container_name: feed-svc-prod
     environment:
       PORT: 3005
-    volumes:
-      - ./microservices/feed-svc/src:/prod/feed-svc/src
-    command: pnpm dev
     networks:
-      - frontend
+      - backend
+    restart: always
 
   # ============================================================
   # FRONTEND
@@ -225,29 +183,19 @@ services:
       context: .
       dockerfile: Dockerfile
       target: frontend
-    container_name: frontend
-    profiles:
-      - front
-    ports:
-      - "3000:3000"
+    container_name: frontend-prod
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    env_file:
-      - .env
-    volumes:
-      - ./front/src:/prod/frontend/src
-      - ./front/public:/prod/frontend/public
-    command: pnpm dev
+      NEXT_PUBLIC_API_URL: https://api.example.com
     networks:
-      - frontend
+      - backend
+    restart: always
 
   # ============================================================
-  # NGINX GATEWAY (no profile — always on)
-  # Services with profiles may not exist; nginx will return 502 until they're up
+  # NGINX GATEWAY
   # ============================================================
   nginx:
     image: nginx:alpine
-    container_name: nginx
+    container_name: nginx-prod
     ports:
       - "80:80"
     volumes:
@@ -255,6 +203,7 @@ services:
     networks:
       - backend
       - frontend
+    restart: always
 
 networks:
   backend:
