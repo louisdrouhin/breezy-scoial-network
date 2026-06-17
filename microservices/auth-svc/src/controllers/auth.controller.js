@@ -15,6 +15,13 @@ async function login(req, res) {
     const { email, password } = req.body;
     const { accessToken, refreshToken } = await authService.login(email, password);
 
+    res.cookie('accessToken', accessToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
+    });
+
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -33,6 +40,13 @@ async function refresh(req, res) {
     const refreshToken = req.cookies.refreshToken;
     const { accessToken, refreshToken: newRefreshToken } = await authService.refresh(refreshToken);
 
+    res.cookie('accessToken', accessToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
+    });
+
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -49,8 +63,11 @@ async function refresh(req, res) {
 async function logout(req, res) {
   try {
     const refreshToken = req.cookies.refreshToken;
-    await authService.logout(refreshToken);
+    if (refreshToken) {
+      await authService.logout(refreshToken);
+    }
 
+    res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     res.status(204).send();
   } catch (err) {
