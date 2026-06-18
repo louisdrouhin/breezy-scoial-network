@@ -184,6 +184,7 @@ propre `CLAUDE.md`.
     ├── controllers/
     ├── routes/
     ├── services/
+    ├── models/
     ├── middlewares/
     ├── config/
     ├── seed/
