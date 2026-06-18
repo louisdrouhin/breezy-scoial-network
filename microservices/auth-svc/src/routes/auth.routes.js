@@ -9,5 +9,6 @@ router.post('/login', authController.login);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
 router.get('/validate', authenticate, authController.validate);
+router.get('/validate-cookie', authController.validateCookie);
 
 export default router;

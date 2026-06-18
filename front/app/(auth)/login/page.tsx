@@ -16,10 +16,13 @@ export default function Login() {
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isInitialized && isAuthenticated) {
+    // Redirect immediately if authenticated, even before initialization completes
+    console.log('Login page - isAuthenticated:', isAuthenticated, 'isInitialized:', isInitialized);
+    if (isAuthenticated) {
+      console.log('Redirecting to home');
       router.push('/');
     }
-  }, [isAuthenticated, isInitialized, router]);
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +31,9 @@ export default function Login() {
     if (isLogin) {
       const success = await login({ email, password });
       if (success) {
-        router.push('/');
+        // Redirect immediately after successful login
+        // The httpOnly cookie is already set by the server
+        setTimeout(() => router.push('/'), 100);
       }
     } else {
       if (password !== confirmPassword) {

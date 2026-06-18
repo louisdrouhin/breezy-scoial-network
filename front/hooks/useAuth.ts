@@ -10,28 +10,31 @@ export interface User {
 }
 
 export const useAuth = () => {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize auth state on mount by calling server-side validate endpoint
+  // Initialize auth state on mount by checking if user has valid httpOnly cookie
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Try to validate with the server (uses httpOnly cookie automatically)
-        const isValid = await authAPI.validate('');
-        if (isValid) {
-          // If cookie exists and is valid, we're authenticated
-          // Access token is secure in httpOnly cookie, so we set a flag for the frontend
-          setAccessToken('__httpOnly__');
-          // We can't extract user info from httpOnly token, so we need another endpoint
-          // For now, we'll trust the server's validation
+        // Validate using httpOnly cookie
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost'}/api/auth/validate-cookie`, {
+          method: 'GET',
+          credentials: 'include', // Send cookies with request
+        });
+
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
         }
       } catch (err) {
         console.error('Auth initialization failed:', err);
-        setAccessToken(null);
+        setIsAuthenticated(false);
         setUser(null);
       }
       setIsInitialized(true);
@@ -66,32 +69,30 @@ export const useAuth = () => {
 
     try {
       const response = await authAPI.login(payload);
-      // Access token is now in httpOnly cookie, so we set a flag
-      setAccessToken('__httpOnly__');
+      setIsAuthenticated(true);
       setUser({
         username: response.username,
         email: response.email,
         role: response.role,
       });
+      setIsLoading(false);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
-      return false;
-    } finally {
       setIsLoading(false);
+      return false;
     }
   }, []);
 
   const refresh = useCallback(async () => {
     try {
       await authAPI.refresh();
-      // Token is now in httpOnly cookie, no need to update state
-      setAccessToken('__httpOnly__');
+      // Token is refreshed in httpOnly cookie
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Token refresh failed');
       // If refresh fails, user must login again
-      setAccessToken(null);
+      setIsAuthenticated(false);
       setUser(null);
       return false;
     }
@@ -102,17 +103,14 @@ export const useAuth = () => {
     try {
       await authAPI.logout();
     } finally {
-      setAccessToken(null);
+      setIsAuthenticated(false);
       setUser(null);
       setError(null);
       setIsLoading(false);
     }
   }, []);
 
-  const isAuthenticated = !!accessToken && !!user;
-
   return {
-    accessToken,
     user,
     error,
     isLoading,

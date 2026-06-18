@@ -1,4 +1,5 @@
 import * as authService from '../services/auth.service.js';
+import { verifyToken } from '../utils/jwt.util.js';
 
 async function register(req, res) {
   try {
@@ -88,4 +89,27 @@ function validate(req, res) {
   return res.status(200).json({ message: 'Token is valid' });
 }
 
-export { register, login, refresh, logout, validate };
+function validateCookie(req, res) {
+  // Check if the httpOnly accessToken cookie exists
+  const accessToken = req.cookies.accessToken;
+
+  if (!accessToken) {
+    return res.status(401).json({ message: 'No token cookie found' });
+  }
+
+  try {
+    // Verify the token from the cookie
+    const decoded = verifyToken(accessToken);
+    if (!decoded) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    res.set('X-User-Username', decoded.username);
+    res.set('X-User-Role', decoded.role);
+    return res.status(200).json({ message: 'Cookie is valid' });
+  } catch (err) {
+    return res.status(401).json({ message: 'Token verification failed' });
+  }
+}
+
+export { register, login, refresh, logout, validate, validateCookie };
