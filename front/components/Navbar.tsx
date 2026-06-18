@@ -3,8 +3,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { House, CircleUser, Bell, Settings, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
+  const { logout, user } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
+
   return (
     <div
       className="fixed left-4 top-4 bottom-4 w-72 h-auto bg-[#1A4731] p-6 flex flex-col gap-8 rounded-lg"
@@ -98,9 +108,10 @@ export default function Navbar() {
           }}
         />
         <span style={{ color: "white", fontFamily: "var(--font-alata)" }}>
-          User Name
+          {user?.username || "User"}
         </span>
         <button
+          onClick={handleLogout}
           style={{
             padding: "6px",
             backgroundColor: "transparent",
