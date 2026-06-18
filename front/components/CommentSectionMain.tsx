@@ -10,7 +10,7 @@ interface CommentSectionMainProps {
 }
 
 export default function CommentSectionMain({ postId }: CommentSectionMainProps) {
-  const [comments] = useState<Comment[]>(mockComments);
+  const [comments, setComments] = useState<Comment[]>(mockComments);
   const [mainComment, setMainComment] = useState('');
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
 
@@ -35,7 +35,7 @@ export default function CommentSectionMain({ postId }: CommentSectionMainProps) 
         displayName: 'Your Name',
         username: 'yourusername',
         content: mainComment,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         likes: 0,
         replies: [],
       };

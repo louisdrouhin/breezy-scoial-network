@@ -1,14 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Login() {
+  const router = useRouter();
+  const { login, register, isLoading, error, isAuthenticated, isInitialized } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Redirect immediately if authenticated
+    if (isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+
+    if (isLogin) {
+      const success = await login({ email, password });
+      if (success) {
+        // Redirect immediately after successful login
+        // The httpOnly cookie is already set by the server
+        setTimeout(() => router.push('/'), 100);
+      }
+    } else {
+      if (password !== confirmPassword) {
+        setLocalError('Passwords do not match');
+        return;
+      }
+      const success = await register({ username, email, password });
+      if (success) {
+        setLocalError(null);
+        setIsLogin(true);
+        setEmail('');
+        setPassword('');
+        setUsername('');
+        setConfirmPassword('');
+      }
+    }
+  };
+
+  const displayError = error || localError;
 
   return (
     <div
@@ -60,8 +102,27 @@ export default function Login() {
           {isLogin ? 'Welcome back!' : 'Join our community!'}
         </p>
 
+        {/* Error Message */}
+        {displayError && (
+          <div
+            style={{
+              backgroundColor: '#fee',
+              border: '1px solid #f88',
+              borderRadius: '6px',
+              padding: '12px',
+              marginBottom: '16px',
+              color: '#c00',
+              fontSize: '14px',
+              fontFamily: 'var(--font-alata)',
+            }}
+          >
+            {displayError}
+          </div>
+        )}
+
         {/* Form */}
         <form
+          onSubmit={handleSubmit}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -86,6 +147,7 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
+                required
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -117,6 +179,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              required
               style={{
                 width: '100%',
                 padding: '12px',
@@ -147,6 +210,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              required
               style={{
                 width: '100%',
                 padding: '12px',
@@ -178,6 +242,7 @@ export default function Login() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
+                required
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -194,21 +259,22 @@ export default function Login() {
 
           <button
             type="submit"
+            disabled={isLoading}
             style={{
               width: '100%',
               padding: '12px',
-              backgroundColor: '#1A4731',
+              backgroundColor: isLoading ? '#999' : '#1A4731',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
               fontFamily: 'var(--font-rubik)',
               fontSize: '16px',
               fontWeight: 'bold',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               marginTop: '8px',
             }}
           >
-            {isLogin ? 'Login' : 'Sign Up'}
+            {isLoading ? 'Processing...' : isLogin ? 'Login' : 'Sign Up'}
           </button>
         </form>
 
@@ -224,7 +290,10 @@ export default function Login() {
         >
           {isLogin ? "Don't have an account? " : 'Already have an account? '}
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setLocalError(null);
+            }}
             style={{
               background: 'none',
               border: 'none',
