@@ -16,10 +16,8 @@ export default function Login() {
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Redirect immediately if authenticated, even before initialization completes
-    console.log('Login page - isAuthenticated:', isAuthenticated, 'isInitialized:', isInitialized);
+    // Redirect immediately if authenticated
     if (isAuthenticated) {
-      console.log('Redirecting to home');
       router.push('/');
     }
   }, [isAuthenticated, router]);

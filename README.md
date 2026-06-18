@@ -26,32 +26,29 @@ pnpm install
 All services run in containers with hot-reload via code bind-mounts.
 
 ```bash
-# Start all services
-pnpm docker:dev
+# Start all services (frontend, auth-svc, postgres, nginx)
+docker compose up
 
-# Start specific services (by profile)
-docker compose --profile auth --profile user up -d
-docker compose --profile post up -d
-
-# Start only databases
-docker compose up -d postgres mongodb
+# Start in background
+docker compose up -d
 
 # View logs
 docker compose logs -f [service-name]
 
 # Stop all services
 docker compose down
+
+# Rebuild images
+docker compose build --no-cache
 ```
 
 **Services & Ports:**
 
 - **Frontend**: <http://localhost:3000>
-- **Nginx Gateway**: <http://localhost> (routes to all backend services)
-- **Auth Service**: Internal (via Nginx /api/auth)
-- **User Service**: Internal (via Nginx /api/users)
-- **Post Service**: Internal (via Nginx /api/posts)
-- **Notif Service**: Internal (via Nginx /api/notifications)
-- **Feed Service**: Internal (via Nginx /api/feed)
+- **Nginx Gateway**: <http://localhost>
+- **Auth Service**: <http://localhost/api/auth/*> (via Nginx gateway)
+- **PostgreSQL**: Internal only (not exposed)
+- **Note**: Other services (user, post, notif, feed) are not yet included in the dev docker-compose
 
 ### Without Docker (Local Development)
 
@@ -98,49 +95,44 @@ docker compose -f docker-compose.prod.yml ps
 
 ## Architecture
 
-### Service & Network Layout
+### Service & Network Layout (Development)
+
+Current dev setup includes:
 
 ```mermaid
 graph TB
-  Client["Client"]
+  Client["Client / Browser"]
 
-  Nginx["Nginx Gateway - Port 80"]
+  Nginx["Nginx Gateway - localhost:80"]
 
   subgraph frontend["Frontend Network"]
-      Frontend["Next.js Frontend - Port 3000"]
+      Frontend["Next.js Frontend - localhost:3000"]
   end
 
   subgraph backend["Backend Network"]
-      AuthSvc["Auth Service - 3001"]
-      UserSvc["User Service - 3002"]
-      PostSvc["Post Service - 3003"]
-      NotifSvc["Notif Service - 3004"]
-      FeedSvc["Feed Service - 3005"]
-
-      AuthDB["Auth DB - PostgreSQL"]
-      UserDB["User DB - PostgreSQL"]
-      PostDB["Post DB - MongoDB"]
-      NotifDB["Notif DB - MongoDB"]
+      AuthSvc["Auth Service - 3001 (internal)"]
+      AuthDB["PostgreSQL - 5432 (internal)"]
   end
 
   Client -->|HTTP| Nginx
-  Nginx -->|Routes /| Frontend
-  Nginx -->|Routes /api/auth| AuthSvc
-  Nginx -->|Routes /api/users| UserSvc
-  Nginx -->|Routes /api/posts| PostSvc
-  Nginx -->|Routes /api/notifications| NotifSvc
-  Nginx -->|Routes /api/feed| FeedSvc
+  Nginx -->|/ → Frontend| Frontend
+  Nginx -->|/api/auth → AuthSvc| AuthSvc
 
   AuthSvc --> AuthDB
-  UserSvc --> UserDB
-  PostSvc --> PostDB
-  NotifSvc --> NotifDB
 ```
+
+**Full Architecture** (reference — not all services deployed yet):
+
+The complete architecture includes:
+- `user-svc` (PostgreSQL) — User profiles & follows
+- `post-svc` (MongoDB) — Posts & comments
+- `notif-svc` (MongoDB) — Notifications
+- `feed-svc` (stateless) — Feed calculation (fan-out on read)
 
 **Networks:**
 
-- `backend`: Services & databases (isolated from frontend)
-- `frontend`: Frontend (public-facing)
+- `backend-network`: Services & databases (isolated from frontend)
+- `frontend-network`: Frontend only (public-facing)
 - Nginx bridges both networks for routing
 
 ## Configuration Files
