@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { authAPI, RegisterPayload, LoginPayload } from '@/lib/api';
 
 export interface User {
@@ -9,11 +9,43 @@ export interface User {
   role: string;
 }
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
 export const useAuth = () => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const token = getCookie('accessToken');
+    if (token) {
+      setAccessToken(token);
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const decoded = JSON.parse(atob(parts[1]));
+          setUser({
+            username: decoded.username,
+            email: decoded.email,
+            role: decoded.role,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to decode token:', err);
+        setAccessToken(null);
+        setUser(null);
+      }
+    }
+    setIsInitialized(true);
+  }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
     setIsLoading(true);
@@ -96,6 +128,7 @@ export const useAuth = () => {
     user,
     error,
     isLoading,
+    isInitialized,
     isAuthenticated,
     register,
     login,

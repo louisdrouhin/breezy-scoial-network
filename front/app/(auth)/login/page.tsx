@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function Login() {
   const router = useRouter();
-  const { login, register, isLoading, error, isAuthenticated } = useAuth();
+  const { login, register, isLoading, error, isAuthenticated, isInitialized } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,10 +16,10 @@ export default function Login() {
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isInitialized && isAuthenticated) {
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isInitialized, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
