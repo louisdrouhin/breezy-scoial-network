@@ -34,7 +34,7 @@ docker compose --profile auth --profile user up -d
 docker compose --profile post up -d
 
 # Start only databases
-pnpm docker:db
+docker compose up -d postgres mongodb
 
 # View logs
 docker compose logs -f [service-name]
@@ -46,12 +46,12 @@ docker compose down
 **Services & Ports:**
 
 - **Frontend**: <http://localhost:3000>
-- **Nginx Gateway**: <http://localhost>
-- **Auth Service**: localhost:3001
-- **User Service**: localhost:3002
-- **Post Service**: localhost:3003
-- **Notif Service**: localhost:3004
-- **Feed Service**: localhost:3005
+- **Nginx Gateway**: <http://localhost> (routes to all backend services)
+- **Auth Service**: Internal (via Nginx /api/auth)
+- **User Service**: Internal (via Nginx /api/users)
+- **Post Service**: Internal (via Nginx /api/posts)
+- **Notif Service**: Internal (via Nginx /api/notifications)
+- **Feed Service**: Internal (via Nginx /api/feed)
 
 ### Without Docker (Local Development)
 

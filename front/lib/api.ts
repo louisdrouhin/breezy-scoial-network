@@ -11,6 +11,22 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface RegisterResponse {
+  username: string;
+  email: string;
+  role: string;
+}
+
+export interface LoginResponse {
+  username: string;
+  email: string;
+  role: string;
+}
+
+export interface RefreshResponse {
+  message: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   username?: string;
@@ -19,7 +35,7 @@ export interface AuthResponse {
 }
 
 export const authAPI = {
-  register: async (payload: RegisterPayload): Promise<AuthResponse> => {
+  register: async (payload: RegisterPayload): Promise<RegisterResponse> => {
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -35,7 +51,7 @@ export const authAPI = {
     return response.json();
   },
 
-  login: async (payload: LoginPayload): Promise<AuthResponse> => {
+  login: async (payload: LoginPayload): Promise<LoginResponse> => {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,7 +67,7 @@ export const authAPI = {
     return response.json();
   },
 
-  refresh: async (): Promise<AuthResponse> => {
+  refresh: async (): Promise<RefreshResponse> => {
     const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

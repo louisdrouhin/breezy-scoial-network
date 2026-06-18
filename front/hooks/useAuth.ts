@@ -9,14 +9,6 @@ export interface User {
   role: string;
 }
 
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
-
 export const useAuth = () => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -24,27 +16,28 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initialize auth state on mount by calling server-side validate endpoint
   useEffect(() => {
-    const token = getCookie('accessToken');
-    if (token) {
-      setAccessToken(token);
+    const initializeAuth = async () => {
       try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const decoded = JSON.parse(atob(parts[1]));
-          setUser({
-            username: decoded.username,
-            email: decoded.email,
-            role: decoded.role,
-          });
+        // Try to validate with the server (uses httpOnly cookie automatically)
+        const isValid = await authAPI.validate('');
+        if (isValid) {
+          // If cookie exists and is valid, we're authenticated
+          // Access token is secure in httpOnly cookie, so we set a flag for the frontend
+          setAccessToken('__httpOnly__');
+          // We can't extract user info from httpOnly token, so we need another endpoint
+          // For now, we'll trust the server's validation
         }
       } catch (err) {
-        console.error('Failed to decode token:', err);
+        console.error('Auth initialization failed:', err);
         setAccessToken(null);
         setUser(null);
       }
-    }
-    setIsInitialized(true);
+      setIsInitialized(true);
+    };
+
+    initializeAuth();
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
@@ -73,19 +66,13 @@ export const useAuth = () => {
 
     try {
       const response = await authAPI.login(payload);
-      setAccessToken(response.accessToken);
-
-      // Decode JWT to get user info
-      const parts = response.accessToken.split('.');
-      if (parts.length === 3) {
-        const decoded = JSON.parse(atob(parts[1]));
-        setUser({
-          username: decoded.username,
-          email: decoded.email,
-          role: decoded.role,
-        });
-      }
-
+      // Access token is now in httpOnly cookie, so we set a flag
+      setAccessToken('__httpOnly__');
+      setUser({
+        username: response.username,
+        email: response.email,
+        role: response.role,
+      });
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -97,8 +84,9 @@ export const useAuth = () => {
 
   const refresh = useCallback(async () => {
     try {
-      const response = await authAPI.refresh();
-      setAccessToken(response.accessToken);
+      await authAPI.refresh();
+      // Token is now in httpOnly cookie, no need to update state
+      setAccessToken('__httpOnly__');
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Token refresh failed');

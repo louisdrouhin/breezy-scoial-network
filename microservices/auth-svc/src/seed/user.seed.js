@@ -1,4 +1,4 @@
-import 'dotenv/config.js';
+import 'dotenv/config';
 import sequelize from '../config/database.config.js';
 import { Account } from '../models/index.js';
 import { hashPassword } from '../utils/bcrypt.util.js';

@@ -13,10 +13,10 @@ async function register(req, res) {
 async function login(req, res) {
   try {
     const { email, password } = req.body;
-    const { accessToken, refreshToken } = await authService.login(email, password);
+    const { accessToken, refreshToken, username, role } = await authService.login(email, password);
 
     res.cookie('accessToken', accessToken, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000,
@@ -29,7 +29,8 @@ async function login(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({ accessToken });
+    // Return user info but NOT the token (it's in httpOnly cookie)
+    res.status(200).json({ username, email, role });
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
@@ -41,7 +42,7 @@ async function refresh(req, res) {
     const { accessToken, refreshToken: newRefreshToken } = await authService.refresh(refreshToken);
 
     res.cookie('accessToken', accessToken, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000,
@@ -54,7 +55,8 @@ async function refresh(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({ accessToken });
+    // Return success status only (token is in httpOnly cookie)
+    res.status(200).json({ message: 'Token refreshed' });
   } catch (err) {
     res.status(401).json({ message: err.message });
   }

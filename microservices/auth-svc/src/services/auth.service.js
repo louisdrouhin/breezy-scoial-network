@@ -1,5 +1,5 @@
 import { hashPassword, comparePassword } from '../utils/bcrypt.util.js';
-import { generateToken, verifyToken } from '../utils/jwt.util.js';
+import { generateToken } from '../utils/jwt.util.js';
 import { Account, RefreshToken } from '../models/index.js';
 import crypto from 'crypto';
 
@@ -69,7 +69,7 @@ async function login(email, password) {
     accountUsername: account.username,
   });
 
-  return { accessToken, refreshToken };
+  return { accessToken, refreshToken, username: account.username, role: account.role };
 }
 
 async function refresh(refreshToken) {
@@ -113,7 +113,7 @@ async function refresh(refreshToken) {
     accountUsername: account.username,
   });
 
-  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  return { accessToken: newAccessToken, refreshToken: newRefreshToken, username: account.username, role: account.role };
 }
 
 async function logout(refreshToken) {

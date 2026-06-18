@@ -1,4 +1,4 @@
-import 'dotenv/config.js';
+import 'dotenv/config';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import sequelize from './config/database.config.js';

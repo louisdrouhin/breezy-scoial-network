@@ -1,15 +1,13 @@
 version: '3.8'
 
 services:
-  # PostgreSQL (for auth-svc)
+  # PostgreSQL (for auth-svc) - not exposed externally
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: "-c shared_buffers=256MB"
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./microservices/auth-svc/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -21,14 +19,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # Auth Service (PostgreSQL)
+  # Auth Service (PostgreSQL) - not exposed externally, accessed via Nginx
   auth-svc:
     build:
       context: .
       dockerfile: Dockerfile
       target: auth-svc
-    ports:
-      - "3001:3001"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_svc
       PORT: 3001
@@ -46,7 +42,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://nginx
+      NEXT_PUBLIC_API_URL: http://localhost
     depends_on:
       - nginx
     networks:
