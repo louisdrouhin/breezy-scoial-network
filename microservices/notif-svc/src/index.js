@@ -1,17 +1,25 @@
-import "dotenv/config"
-import express from "express"
+import express from "express";
+import dotenv from "dotenv";
 
-const app = express()
-const PORT = process.env.PORT || 3004
+import connectDB from "./config/db.config.js";
 
-app.use(express.json())
+dotenv.config();
 
-// Route de santé
+const app = express();
+const port = process.env.API_PORT || 3004;
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.get("/api/health", (req, res) => {
-  res.json({ status: "UP" })
-})
+  res.status(200).json({ status: "UP" });
+});
 
-// Démarrage du serveur
-app.listen(PORT, () => {
-  console.log(`Notification service listening on port ${PORT}`)
-})
+async function startServer() {
+  await connectDB();
+  app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+}
+
+startServer();
