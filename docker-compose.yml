@@ -37,8 +37,9 @@ services:
   # Frontend
   frontend:
     build:
-      context: ./front
+      context: .
       dockerfile: Dockerfile
+      target: frontend
     ports:
       - "3000:3000"
     environment:
