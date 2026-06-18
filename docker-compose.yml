@@ -24,12 +24,13 @@ services:
   # Auth Service (PostgreSQL)
   auth-svc:
     build:
-      context: ./microservices/auth-svc
+      context: .
       dockerfile: Dockerfile
+      target: auth-svc
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_svc?schema=public
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_svc
       PORT: 3001
     depends_on:
       postgres:

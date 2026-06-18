@@ -1,5 +1,6 @@
 import 'dotenv/config.js';
-import prisma from '../config/database.config.js';
+import sequelize from '../config/database.config.js';
+import { Account } from '../models/index.js';
 import { hashPassword } from '../utils/bcrypt.util.js';
 
 if (process.env.NODE_ENV === 'production') {
@@ -14,14 +15,10 @@ if (process.env.SEED_ENABLED !== 'true') {
 
 async function runSeed() {
   try {
-    // TODO: Test database connection using Prisma
-    // Hint: Use prisma.$queryRaw() or a simple findFirst() to test connection
-    await prisma.account.findFirst();
+    await sequelize.authenticate();
     console.log('Database connection successful');
 
-    // TODO: Sync/create tables if needed
-    // Hint: With Prisma, use `npx prisma migrate deploy` or `npx prisma db push`
-    // For seed, we assume migrations are already applied
+    await sequelize.sync();
     console.log('Models synchronized');
 
     const users = [
@@ -30,11 +27,7 @@ async function runSeed() {
     ];
 
     for (const u of users) {
-      // TODO: Check if user already exists in the database
-      // Hint: Use prisma.account.findUnique({ where: { username: u.username } })
-      const existing = await prisma.account.findUnique({
-        where: { username: u.username },
-      });
+      const existing = await Account.findByPk(u.username);
 
       if (existing) {
         console.log(`User ${u.username} already exists — skipping`);
@@ -43,15 +36,11 @@ async function runSeed() {
 
       const passwordHash = await hashPassword(u.password);
 
-      // TODO: Create the new user in the database
-      // Hint: Use prisma.account.create({ data: { ... } })
-      await prisma.account.create({
-        data: {
-          username: u.username,
-          email: u.email,
-          passwordHash,
-          role: u.role,
-        },
+      await Account.create({
+        username: u.username,
+        email: u.email,
+        passwordHash,
+        role: u.role,
       });
 
       console.log(`User created: ${u.username}`);
@@ -63,7 +52,7 @@ async function runSeed() {
     console.error('Seed error:', err);
     process.exit(1);
   } finally {
-    await prisma.$disconnect();
+    await sequelize.close();
   }
 }
 

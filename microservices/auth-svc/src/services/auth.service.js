@@ -1,6 +1,6 @@
 import { hashPassword, comparePassword } from '../utils/bcrypt.util.js';
 import { generateToken, verifyToken } from '../utils/jwt.util.js';
-import prisma from '../config/database.config.js';
+import { Account, RefreshToken } from '../models/index.js';
 import crypto from 'crypto';
 
 async function register(username, email, password) {
@@ -8,15 +8,13 @@ async function register(username, email, password) {
     throw new Error('Username, email and password are required');
   }
 
-  const existingByUsername = await prisma.account.findUnique({
-    where: { username },
-  });
+  const existingByUsername = await Account.findByPk(username);
 
   if (existingByUsername) {
     throw new Error('Username already exists');
   }
 
-  const existingByEmail = await prisma.account.findUnique({
+  const existingByEmail = await Account.findOne({
     where: { email },
   });
 
@@ -26,13 +24,11 @@ async function register(username, email, password) {
 
   const passwordHash = await hashPassword(password);
 
-  const newAccount = await prisma.account.create({
-    data: {
-      username,
-      email,
-      passwordHash,
-      role: 'USER',
-    },
+  const newAccount = await Account.create({
+    username,
+    email,
+    passwordHash,
+    role: 'USER',
   });
 
   return { username: newAccount.username, email: newAccount.email, role: newAccount.role };
@@ -43,7 +39,7 @@ async function login(email, password) {
     throw new Error('Email and password are required');
   }
 
-  const account = await prisma.account.findUnique({
+  const account = await Account.findOne({
     where: { email },
   });
 
@@ -67,12 +63,10 @@ async function login(email, password) {
   const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  await prisma.refreshToken.create({
-    data: {
-      tokenHash: refreshTokenHash,
-      expiresAt,
-      accountUsername: account.username,
-    },
+  await RefreshToken.create({
+    tokenHash: refreshTokenHash,
+    expiresAt,
+    accountUsername: account.username,
   });
 
   return { accessToken, refreshToken };
@@ -85,9 +79,9 @@ async function refresh(refreshToken) {
 
   const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
-  const storedToken = await prisma.refreshToken.findUnique({
+  const storedToken = await RefreshToken.findOne({
     where: { tokenHash: refreshTokenHash },
-    include: { account: true },
+    include: [{ model: Account, as: 'Account' }],
   });
 
   if (!storedToken) {
@@ -95,11 +89,11 @@ async function refresh(refreshToken) {
   }
 
   if (new Date() > storedToken.expiresAt) {
-    await prisma.refreshToken.delete({ where: { tokenHash: refreshTokenHash } });
+    await storedToken.destroy();
     throw new Error('Refresh token expired');
   }
 
-  const account = storedToken.account;
+  const account = storedToken.Account;
 
   const newAccessToken = generateToken({
     username: account.username,
@@ -111,14 +105,12 @@ async function refresh(refreshToken) {
   const newRefreshTokenHash = crypto.createHash('sha256').update(newRefreshToken).digest('hex');
   const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  await prisma.refreshToken.delete({ where: { tokenHash: refreshTokenHash } });
+  await storedToken.destroy();
 
-  await prisma.refreshToken.create({
-    data: {
-      tokenHash: newRefreshTokenHash,
-      expiresAt: newExpiresAt,
-      accountUsername: account.username,
-    },
+  await RefreshToken.create({
+    tokenHash: newRefreshTokenHash,
+    expiresAt: newExpiresAt,
+    accountUsername: account.username,
   });
 
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
@@ -131,13 +123,15 @@ async function logout(refreshToken) {
 
   const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
-  const deleted = await prisma.refreshToken.delete({
+  const token = await RefreshToken.findOne({
     where: { tokenHash: refreshTokenHash },
-  }).catch(() => null);
+  });
 
-  if (!deleted) {
+  if (!token) {
     throw new Error('Refresh token not found');
   }
+
+  await token.destroy();
 }
 
 export { register, login, refresh, logout };

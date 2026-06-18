@@ -20,6 +20,11 @@ const RefreshToken = sequelize.define(
       allowNull: false,
       field: "expires_at",
     },
+    accountUsername: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
+      field: "account_username",
+    },
   },
   {
     tableName: "refresh_tokens",
