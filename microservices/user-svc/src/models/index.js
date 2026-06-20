@@ -17,4 +17,16 @@ Profile.belongsToMany(Profile, {
   onDelete: "CASCADE",
 });
 
+// Associations pour Follow
+Follow.belongsTo(Profile, {
+  as: "follower",
+  foreignKey: "followerUsername",
+  targetKey: "username",
+});
+Follow.belongsTo(Profile, {
+  as: "followed",
+  foreignKey: "followedUsername",
+  targetKey: "username",
+});
+
 export { Profile, Follow };
