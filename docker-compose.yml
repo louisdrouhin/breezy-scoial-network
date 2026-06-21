@@ -163,7 +163,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${NOTIF_MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${NOTIF_MONGO_PASSWORD}
     ports:
-      - "37017:27017"
+      - "27018:27017"
     volumes:
       - notif-svc-db:/data/db
     networks:
@@ -185,7 +185,7 @@ services:
     ports:
       - "3004:3004"
     environment:
-      MONGODB_URI: mongodb://admin:admin@notif-mongo:37017/notif_svc?authSource=admin
+      MONGODB_URI: mongodb://admin:admin@notif-mongo:27017/notif_svc?authSource=admin
       PORT: 3004
     volumes:
       - ./microservices/notif-svc/src:/prod/notif-svc/src
