@@ -155,7 +155,7 @@ services:
   # NOTIFICATION SERVICE STACK
   # ============================================================
   notif-mongo:
-    image: mongo:7-alpine
+    image: mongo:7
     container_name: notif-mongo
     profiles:
       - notif
