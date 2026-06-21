@@ -82,7 +82,7 @@ services:
   # POST SERVICE STACK
   # ============================================================
   post-mongo:
-    image: mongo:7-alpine
+    image: mongo:7
     container_name: post-mongo-prod
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
@@ -123,7 +123,7 @@ services:
   # NOTIFICATION SERVICE STACK
   # ============================================================
   notif-mongo:
-    image: mongo:7-alpine
+    image: mongo:7
     container_name: notif-mongo-prod
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
