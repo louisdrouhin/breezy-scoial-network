@@ -143,6 +143,8 @@ services:
     environment:
       MONGODB_URI: mongodb://admin:admin@post-mongo:27017/post_svc?authSource=admin
       PORT: 3003
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NOTIF_SVC_URL: http://notif-svc:3004
     volumes:
       - ./microservices/post-svc/src:/prod/post-svc/src
     command: pnpm dev
@@ -188,6 +190,7 @@ services:
     environment:
       MONGODB_URI: mongodb://admin:admin@notif-mongo:27017/notif_svc?authSource=admin
       PORT: 3004
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
     volumes:
       - ./microservices/notif-svc/src:/prod/notif-svc/src
     command: pnpm dev

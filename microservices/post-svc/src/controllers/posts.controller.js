@@ -1,5 +1,6 @@
 import Post from '../models/post.model.js'
 import Like from '../models/like.model.js'
+import { notifyLike, notifyComment, notifyMentions } from '../services/notif.service.js'
 
 export const createPost = async (req, res) => {
   const authorUsername = req.get('x-user-username')
@@ -8,9 +9,11 @@ export const createPost = async (req, res) => {
   const { content, tags, parentId } = req.body
   if (!content) return res.status(400).json({ message: 'Le contenu est requis' })
 
+  let parentAuthor = null
   if (parentId) {
     const parent = await Post.findById(parentId)
     if (!parent) return res.status(404).json({ message: 'Post parent introuvable' })
+    parentAuthor = parent.authorUsername
     await Post.findByIdAndUpdate(parentId, { $inc: { replyCount: 1 } })
   }
 
@@ -20,6 +23,9 @@ export const createPost = async (req, res) => {
     tags: tags ?? [],
     parent: parentId ?? null,
   })
+
+  if (parentAuthor) notifyComment(parentAuthor, authorUsername, parentId)
+  notifyMentions(content, authorUsername, post._id.toString())
 
   return res.status(201).json({ post })
 }
@@ -94,6 +100,8 @@ export const likePost = async (req, res) => {
     { $inc: { likeCount: 1 } },
     { new: true }
   )
+
+  notifyLike(post.authorUsername, username, req.params.id)
 
   return res.json({ liked: true, count: updated.likeCount })
 }
