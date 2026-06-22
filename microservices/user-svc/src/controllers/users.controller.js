@@ -1,5 +1,4 @@
-import Profile from "../models/profile.model.js";
-import Follow from "../models/follow.model.js";
+import { Profile, Follow } from "../models/index.js";
 
 export const getPublicProfile = async (req, res) => {
   const { username } = req.validated;
