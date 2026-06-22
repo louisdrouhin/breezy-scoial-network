@@ -31,6 +31,30 @@ async function register(username, email, password) {
     role: 'USER',
   });
 
+  try {
+    const res = await fetch('http://user-svc:3002/internal/users/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        displayName: null,
+        bio: null,
+        avatarUrl: null,
+        bannerUrl: null,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`User service error: ${res.status} - ${errorBody}`);
+    }
+
+    await res.json();
+  } catch (err) {
+    await newAccount.destroy();
+    throw new Error(`Registration failed: could not create user profile - ${err.message}`);
+  }
+
   return { username: newAccount.username, email: newAccount.email, role: newAccount.role };
 }
 
