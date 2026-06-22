@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth-svc: ${{ steps.changes.outputs.auth-svc }}
+      user-svc: ${{ steps.changes.outputs.user-svc }}
+      post-svc: ${{ steps.changes.outputs.post-svc }}
+      notif-svc: ${{ steps.changes.outputs.notif-svc }}
+      feed-svc: ${{ steps.changes.outputs.feed-svc }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check file changes
+        id: changes
+        run: |
+          # Récupérer le tag précédent (pas le tag courant)
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            # Si pas de tag précédent, comparer avec la racine
+            BASE=$(git rev-list --max-parents=0 HEAD)
+          else
+            BASE="$PREV_TAG"
+          fi
+
+          # Vérifier les changements par service
+          echo "auth-svc=$(git diff --quiet $BASE..HEAD -- microservices/auth-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "user-svc=$(git diff --quiet $BASE..HEAD -- microservices/user-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "post-svc=$(git diff --quiet $BASE..HEAD -- microservices/post-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "notif-svc=$(git diff --quiet $BASE..HEAD -- microservices/notif-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "feed-svc=$(git diff --quiet $BASE..HEAD -- microservices/feed-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "frontend=$(git diff --quiet $BASE..HEAD -- front Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+
+  build-auth-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.auth-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: auth-svc
+          tags: breezy-auth-svc:latest
+          push: false
+
+  build-user-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.user-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: user-svc
+          tags: breezy-user-svc:latest
+          push: false
+
+  build-post-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.post-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: post-svc
+          tags: breezy-post-svc:latest
+          push: false
+
+  build-notif-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.notif-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: notif-svc
+          tags: breezy-notif-svc:latest
+          push: false
+
+  build-feed-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.feed-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: feed-svc
+          tags: breezy-feed-svc:latest
+          push: false
+
+  build-frontend:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.frontend == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: frontend
+          tags: breezy-frontend:latest
+          push: false
+
+  publish:
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: orhun/git-cliff-action@v4
+        id: git-cliff
+        with:
+          config: .cliff.toml
+          args: --latest --strip header
+      - uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.git-cliff.outputs.content }}
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          draft: false
