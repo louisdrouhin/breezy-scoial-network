@@ -215,6 +215,9 @@ services:
       - "3005:3005"
     environment:
       PORT: 3005
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SVC_URL: http://user-svc:3002
+      POST_SVC_URL: http://post-svc:3003
     volumes:
       - ./microservices/feed-svc/src:/prod/feed-svc/src
     command: pnpm dev

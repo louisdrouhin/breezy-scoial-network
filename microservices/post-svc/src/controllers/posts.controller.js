@@ -145,8 +145,14 @@ export const getPostsByAuthors = async (req, res) => {
   const usernames = raw.split(',').map(u => u.trim()).filter(Boolean)
   if (usernames.length === 0) return res.status(400).json({ message: 'Liste d\'auteurs vide' })
 
+  const page = Math.max(1, parseInt(req.query.page) || 1)
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20))
+  const skip = (page - 1) * limit
+
   const posts = await Post.find({ authorUsername: { $in: usernames }, parent: null })
     .sort({ created_at: -1 })
+    .skip(skip)
+    .limit(limit)
 
   return res.json(posts)
 }
