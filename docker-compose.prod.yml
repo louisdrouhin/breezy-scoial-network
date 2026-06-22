@@ -6,13 +6,11 @@ services:
   # ============================================================
   auth-postgres:
     image: postgres:16-alpine
-    container_name: auth-postgres-prod
+    container_name: auth-postgres
     environment:
       POSTGRES_USER: ${AUTH_DB_USER}
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
       POSTGRES_DB: auth_svc
-    env_file:
-      - .env.prod
     volumes:
       - auth-svc-db:/var/lib/postgresql/data
     networks:
@@ -25,16 +23,15 @@ services:
       retries: 5
 
   auth-svc:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: auth-svc
-    container_name: auth-svc-prod
+    image: ghcr.io/louisdrouhin/breezy-auth-svc:latest
+    container_name: auth-svc
+    pull_policy: always
     environment:
       DATABASE_URL: postgresql://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@auth-postgres:5432/auth_svc?schema=public
       PORT: 3001
-    env_file:
-      - .env.prod
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      NODE_ENV: production
     depends_on:
       auth-postgres:
         condition: service_healthy
@@ -47,10 +44,10 @@ services:
   # ============================================================
   user-postgres:
     image: postgres:16-alpine
-    container_name: user-postgres-prod
+    container_name: user-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_USER: ${USER_DB_USER}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
       POSTGRES_DB: user_svc
     volumes:
       - user-svc-db:/var/lib/postgresql/data
@@ -64,13 +61,13 @@ services:
       retries: 5
 
   user-svc:
-    build:
-      context: .
-      dockerfile: microservices/user-svc/Dockerfile
-    container_name: user-svc-prod
+    image: ghcr.io/louisdrouhin/breezy-user-svc:latest
+    container_name: user-svc
+    pull_policy: always
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@user-postgres:5432/user_svc?schema=public
+      DATABASE_URL: postgresql://${USER_DB_USER}:${USER_DB_PASSWORD}@user-postgres:5432/user_svc?schema=public
       PORT: 3002
+      NODE_ENV: production
     depends_on:
       user-postgres:
         condition: service_healthy
@@ -83,10 +80,10 @@ services:
   # ============================================================
   post-mongo:
     image: mongo:7
-    container_name: post-mongo-prod
+    container_name: post-mongo
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${POST_MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${POST_MONGO_PASSWORD}
       MONGO_INITDB_DATABASE: post_svc
     volumes:
       - post-svc-db:/data/db
@@ -98,20 +95,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    env_file:
-      - .env.prod
 
   post-svc:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: post-svc
-    container_name: post-svc-prod
+    image: ghcr.io/louisdrouhin/breezy-post-svc:latest
+    container_name: post-svc
+    pull_policy: always
     environment:
-      MONGODB_URI: mongodb://admin:password@post-mongo:27017/post_svc?authSource=admin
+      MONGODB_URI: mongodb://${POST_MONGO_USERNAME}:${POST_MONGO_PASSWORD}@post-mongo:27017/post_svc?authSource=admin
       PORT: 3003
-    env_file:
-      - .env.prod
+      NODE_ENV: production
     depends_on:
       post-mongo:
         condition: service_healthy
@@ -124,10 +116,10 @@ services:
   # ============================================================
   notif-mongo:
     image: mongo:7
-    container_name: notif-mongo-prod
+    container_name: notif-mongo
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${NOTIF_MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${NOTIF_MONGO_PASSWORD}
       MONGO_INITDB_DATABASE: notif_svc
     volumes:
       - notif-svc-db:/data/db
@@ -139,20 +131,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    env_file:
-      - .env.prod
 
   notif-svc:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: notif-svc
-    container_name: notif-svc-prod
+    image: ghcr.io/louisdrouhin/breezy-notif-svc:latest
+    container_name: notif-svc
+    pull_policy: always
     environment:
-      MONGODB_URI: mongodb://admin:password@notif-mongo:27017/notif_svc?authSource=admin
+      MONGODB_URI: mongodb://${NOTIF_MONGO_USERNAME}:${NOTIF_MONGO_PASSWORD}@notif-mongo:27017/notif_svc?authSource=admin
       PORT: 3004
-    env_file:
-      - .env.prod
+      NODE_ENV: production
     depends_on:
       notif-mongo:
         condition: service_healthy
@@ -164,13 +151,12 @@ services:
   # FEED SERVICE (no DB)
   # ============================================================
   feed-svc:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: feed-svc
-    container_name: feed-svc-prod
+    image: ghcr.io/louisdrouhin/breezy-feed-svc:latest
+    container_name: feed-svc
+    pull_policy: always
     environment:
       PORT: 3005
+      NODE_ENV: production
     networks:
       - backend
     restart: always
@@ -179,15 +165,13 @@ services:
   # FRONTEND
   # ============================================================
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: frontend
-    container_name: frontend-prod
+    image: ghcr.io/louisdrouhin/breezy-frontend:latest
+    container_name: frontend
+    pull_policy: always
     environment:
-      NEXT_PUBLIC_API_URL: https://api.example.com
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     networks:
-      - backend
+      - frontend
     restart: always
 
   # ============================================================
@@ -195,7 +179,7 @@ services:
   # ============================================================
   nginx:
     image: nginx:alpine
-    container_name: nginx-prod
+    container_name: nginx
     ports:
       - "80:80"
     volumes:

@@ -13,8 +13,6 @@ services:
       POSTGRES_USER: ${AUTH_DB_USER}
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
       POSTGRES_DB: auth_svc
-    env_file:
-      - .env
     ports:
       - "5432:5432"
     volumes:
@@ -41,9 +39,7 @@ services:
       DATABASE_URL: postgresql://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@auth-postgres:5432/auth_svc?schema=public
       PORT: 3001
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRY: ${JWT_EXPIRY}
-    env_file:
-      - .env
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
     volumes:
       - ./microservices/auth-svc/src:/prod/auth-svc/src
       - ./microservices/auth-svc/prisma:/prod/auth-svc/prisma
@@ -66,8 +62,6 @@ services:
       POSTGRES_USER: ${USER_DB_USER}
       POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
       POSTGRES_DB: user_svc
-    env_file:
-      - .env
     ports:
       - "5433:5432"
     volumes:
@@ -91,7 +85,7 @@ services:
     ports:
       - "3002:3002"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@user-postgres:5432/user_svc?schema=public
+      DATABASE_URL: postgresql://${USER_DB_USER}:${USER_DB_PASSWORD}@user-postgres:5432/user_svc?schema=public
       PORT: 3002
     volumes:
       - ./microservices/user-svc/src:/prod/user-svc/src
@@ -102,7 +96,6 @@ services:
         condition: service_healthy
     networks:
       - backend
-      - frontend
 
   # ============================================================
   # POST SERVICE STACK
@@ -116,8 +109,6 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${POST_MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${POST_MONGO_PASSWORD}
       MONGO_INITDB_DATABASE: post_svc
-    env_file:
-      - .env
     ports:
       - "27017:27017"
     volumes:
@@ -141,7 +132,7 @@ services:
     ports:
       - "3003:3003"
     environment:
-      MONGODB_URI: mongodb://admin:admin@post-mongo:27017/post_svc?authSource=admin
+      MONGODB_URI: mongodb://${POST_MONGO_USERNAME}:${POST_MONGO_PASSWORD}@post-mongo:27017/post_svc?authSource=admin
       PORT: 3003
     volumes:
       - ./microservices/post-svc/src:/prod/post-svc/src
@@ -163,6 +154,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${NOTIF_MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${NOTIF_MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: notif_svc
     ports:
       - "27018:27017"
     volumes:
@@ -186,7 +178,7 @@ services:
     ports:
       - "3004:3004"
     environment:
-      MONGODB_URI: mongodb://admin:admin@notif-mongo:27017/notif_svc?authSource=admin
+      MONGODB_URI: mongodb://${NOTIF_MONGO_USERNAME}:${NOTIF_MONGO_PASSWORD}@notif-mongo:27017/notif_svc?authSource=admin
       PORT: 3004
     volumes:
       - ./microservices/notif-svc/src:/prod/notif-svc/src
@@ -233,8 +225,6 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    env_file:
-      - .env
     volumes:
       - ./front/src:/prod/frontend/src
       - ./front/public:/prod/frontend/public
@@ -243,8 +233,7 @@ services:
       - frontend
 
   # ============================================================
-  # NGINX GATEWAY (no profile — always on)
-  # Services with profiles may not exist; nginx will return 502 until they're up
+  # NGINX GATEWAY
   # ============================================================
   nginx:
     image: nginx:alpine
