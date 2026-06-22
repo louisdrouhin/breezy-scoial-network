@@ -73,7 +73,7 @@ services:
     volumes:
       - user-svc-db:/var/lib/postgresql/data
     networks:
-      - frontend
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -101,6 +101,7 @@ services:
       user-postgres:
         condition: service_healthy
     networks:
+      - backend
       - frontend
 
   # ============================================================
@@ -122,7 +123,7 @@ services:
     volumes:
       - post-svc-db:/data/db
     networks:
-      - frontend
+      - backend
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -149,7 +150,7 @@ services:
       post-mongo:
         condition: service_healthy
     networks:
-      - frontend
+      - backend
 
   # ============================================================
   # NOTIFICATION SERVICE STACK
@@ -167,7 +168,7 @@ services:
     volumes:
       - notif-svc-db:/data/db
     networks:
-      - frontend
+      - backend
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -194,7 +195,7 @@ services:
       notif-mongo:
         condition: service_healthy
     networks:
-      - frontend
+      - backend
 
   # ============================================================
   # FEED SERVICE (no DB)
@@ -215,7 +216,7 @@ services:
       - ./microservices/feed-svc/src:/prod/feed-svc/src
     command: pnpm dev
     networks:
-      - frontend
+      - backend
 
   # ============================================================
   # FRONTEND
