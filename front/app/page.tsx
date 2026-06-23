@@ -8,6 +8,7 @@ import Subscriptions from '@/components/Subscriptions';
 import Post from '@/components/Post';
 import { feedAPI, postAPI, Post as PostType } from '@/lib/api';
 import { useProfileCache } from '@/hooks/useProfileCache';
+// Post as PostType used only for feed — newly created posts are not injected into the feed
 
 export default function Home() {
   const [posts, setPosts] = useState<PostType[]>([]);
@@ -17,6 +18,7 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [toast, setToast] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -25,12 +27,15 @@ export default function Home() {
     setIsLoading(true);
     try {
       const data = await feedAPI.get(pageToLoad);
-      setPosts(prev => pageToLoad === 1 ? data.posts : [...prev, ...data.posts]);
+      setPosts(prev => {
+        const existingIds = new Set(prev.map(p => p._id));
+        const newPosts = data.posts.filter(p => !existingIds.has(p._id));
+        return pageToLoad === 1 ? data.posts : [...prev, ...newPosts];
+      });
       setHasMore(data.hasMore);
       loadProfiles(data.posts.map(p => p.authorUsername));
       setPage(pageToLoad + 1);
 
-      // Charger tous les like statuses en parallèle (un seul batch)
       const likeResults = await Promise.allSettled(data.posts.map(p => postAPI.getLikeStatus(p._id)));
       setLikedPostIds(prev => {
         const next = new Set(prev);
@@ -52,7 +57,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!hasMore || isLoading) return;
+    if (!hasMore || isLoading || !isInitialized) return;
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
@@ -63,7 +68,7 @@ export default function Home() {
           });
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '200px' }
     );
 
     if (sentinelRef.current) {
@@ -71,11 +76,11 @@ export default function Home() {
     }
 
     return () => observerRef.current?.disconnect();
-  }, [hasMore, isLoading, loadMore]);
+  }, [hasMore, isLoading, isInitialized, loadMore]);
 
-  const handlePostCreated = (post: PostType) => {
-    setPosts(prev => [post, ...prev]);
-    loadProfiles([post.authorUsername]);
+  const handlePostCreated = () => {
+    setToast(true);
+    setTimeout(() => setToast(false), 3000);
   };
 
   return (
@@ -97,6 +102,18 @@ export default function Home() {
         className="home-center"
       >
         <PostBar onPostCreated={handlePostCreated} />
+
+        {/* Toast desktop */}
+        {toast && (
+          <div style={{
+            position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)',
+            backgroundColor: '#1A4731', color: 'white', padding: '10px 24px',
+            borderRadius: '999px', fontFamily: 'var(--font-alata)', fontSize: '14px',
+            zIndex: 200, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          }}>
+            Post publié !
+          </div>
+        )}
 
         {isInitialized && posts.length === 0 && !isLoading && (
           <div

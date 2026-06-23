@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { postAPI, Post } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfileCache } from '@/hooks/useProfileCache';
 
 interface PostBarProps {
-  onPostCreated?: (post: Post) => void;
+  onPostCreated?: (post?: Post) => void;
   parentId?: string;
   placeholder?: string;
 }
@@ -14,6 +16,14 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { user } = useAuth();
+  const { cache, loadProfiles } = useProfileCache();
+
+  useEffect(() => {
+    if (user) loadProfiles([user.username]);
+  }, [user?.username]);
+
+  const avatarUrl = user ? cache[user.username]?.avatarUrl : null;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -53,15 +63,17 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
       }}
     >
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-        <div
-          style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: '#1A4731',
-            flexShrink: 0,
-          }}
-        />
+        <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#1A4731', flexShrink: 0, overflow: 'hidden' }}>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : user ? (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: 'white', fontFamily: 'var(--font-alata)', fontSize: '18px' }}>
+                {user.username[0].toUpperCase()}
+              </span>
+            </div>
+          ) : null}
+        </div>
         <textarea
           ref={textareaRef}
           value={text}
@@ -69,7 +81,10 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
             if (e.target.value.length <= 280) setText(e.target.value);
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit();
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
           }}
           placeholder={placeholder}
           maxLength={280}

@@ -192,7 +192,7 @@ export default function Post({
         </div>
       ) : (
         <Link href={`/${username}/status/${id}`} style={{ textDecoration: 'none' }}>
-          <p style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', marginBottom: '16px', lineHeight: '1.5', cursor: 'pointer' }}>
+          <p style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', marginBottom: '16px', lineHeight: '1.5', cursor: 'pointer', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
             {currentContent}
           </p>
         </Link>

@@ -88,7 +88,8 @@ export default function StatusPage({ params }: StatusPageProps) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleReplyCreated = (reply: Post) => {
+  const handleReplyCreated = (reply?: Post) => {
+    if (!reply) return;
     setReplies(prev => [reply, ...prev]);
     if (post) setPost({ ...post, replyCount: post.replyCount + 1 });
     loadProfiles([reply.authorUsername]);

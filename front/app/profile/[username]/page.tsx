@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import ProfileHeader from '@/components/ProfileHeader';
@@ -25,6 +25,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [followLoading, setFollowLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -32,7 +37,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         const isSelf = currentUser?.username === username;
         const requests: Promise<unknown>[] = [
           userAPI.getProfile(username),
-          postAPI.getByUser(username),
+          postAPI.getByUser(username, 1),
           userAPI.getFollowers(username),
           userAPI.getFollowing(username),
         ];
@@ -43,6 +48,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         const [profileData, postsData, followers, following, myFollowing] = results as [Profile, PostType[], FollowerEntry[], FollowEntry[], FollowEntry[] | undefined];
         setProfile(profileData);
         setPosts(postsData);
+        setHasMore(postsData.length === 20);
+        setPage(2);
         setFollowersCount(followers.length);
         setFollowingCount(following.length);
         if (myFollowing) {
@@ -56,6 +63,38 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     };
     load();
   }, [username, currentUser?.username]);
+
+  const loadMore = useCallback(async (pageToLoad: number) => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const data = await postAPI.getByUser(username, pageToLoad);
+      setPosts(prev => {
+        const existingIds = new Set(prev.map(p => p._id));
+        return [...prev, ...data.filter(p => !existingIds.has(p._id))];
+      });
+      setHasMore(data.length === 20);
+      setPage(pageToLoad + 1);
+    } catch {
+      setHasMore(false);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, username]);
+
+  useEffect(() => {
+    if (!hasMore || isLoading) return;
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPage(prev => { loadMore(prev); return prev; });
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+    if (sentinelRef.current) observerRef.current.observe(sentinelRef.current);
+    return () => observerRef.current?.disconnect();
+  }, [hasMore, isLoading, loadMore]);
 
   const handleFollowToggle = async () => {
     if (followLoading) return;
@@ -136,6 +175,20 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               />
             ))
           )}
+
+          {isLoadingMore && (
+            <div style={{ textAlign: 'center', padding: '20px', fontFamily: 'var(--font-alata)', color: '#999' }}>
+              Chargement...
+            </div>
+          )}
+
+          {!hasMore && posts.length > 0 && (
+            <div style={{ textAlign: 'center', padding: '24px', fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px', borderTop: '1px solid #E0E0E0', marginTop: '8px' }}>
+              Tous les posts ont été chargés
+            </div>
+          )}
+
+          <div ref={sentinelRef} style={{ height: '1px' }} />
         </div>
       </div>
     </div>

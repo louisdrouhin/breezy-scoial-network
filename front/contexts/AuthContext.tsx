@@ -31,11 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const initDone = useRef(false);
 
+  const base = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+
   useEffect(() => {
     if (initDone.current) return;
     initDone.current = true;
-
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
 
     const init = async () => {
       try {

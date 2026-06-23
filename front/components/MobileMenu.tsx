@@ -1,11 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { X, Settings, Shield, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfileCache } from '@/hooks/useProfileCache';
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const { cache, loadProfiles } = useProfileCache();
+  const router = useRouter();
+
+  const profile = user ? cache[user.username] : null;
+  const avatarUrl = profile?.avatarUrl ?? null;
+
+  useEffect(() => {
+    if (user) loadProfiles([user.username]);
+  }, [user?.username]);
+
+  const handleLogout = async () => {
+    setIsOpen(false);
+    await logout();
+    router.push('/login');
+  };
 
   return (
     <>
@@ -20,8 +39,18 @@ export default function MobileMenu() {
           border: 'none',
           cursor: 'pointer',
           padding: 0,
+          overflow: 'hidden',
+          flexShrink: 0,
         }}
-      />
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span style={{ color: 'white', fontFamily: 'var(--font-alata)', fontSize: '16px' }}>
+            {user?.username?.[0]?.toUpperCase() ?? '?'}
+          </span>
+        )}
+      </button>
 
       {/* Overlay */}
       {isOpen && (
@@ -74,92 +103,77 @@ export default function MobileMenu() {
           <X size={24} style={{ color: '#1A4731' }} />
         </button>
 
-        {/* Menu items */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '20px' }}>
-          {/* Settings */}
+        {/* User info */}
+        {user && (
           <Link
-            href="/settings"
+            href={`/profile/${user.username}`}
             onClick={() => setIsOpen(false)}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
               padding: '16px',
-              backgroundColor: 'transparent',
               textDecoration: 'none',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-alata)',
-              color: '#1A4731',
-              fontSize: '16px',
-              textAlign: 'left',
+              borderBottom: '1px solid #E0E0E0',
+              marginBottom: '8px',
             }}
+          >
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#1A4731', overflow: 'hidden', flexShrink: 0 }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: 'white', fontFamily: 'var(--font-alata)', fontSize: '16px' }}>
+                    {user.username[0].toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div>
+              <p style={{ margin: 0, fontFamily: 'var(--font-rubik)', color: '#1A4731', fontSize: '15px', fontWeight: 600 }}>
+                {profile?.displayName ?? user.username}
+              </p>
+              <p style={{ margin: 0, fontFamily: 'var(--font-alata)', color: '#999', fontSize: '13px' }}>
+                @{user.username}
+              </p>
+            </div>
+          </Link>
+        )}
+
+        {/* Menu items */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '20px' }}>
+          <Link
+            href="/settings"
+            onClick={() => setIsOpen(false)}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'transparent', textDecoration: 'none', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '16px' }}
           >
             <Settings size={20} />
             <span>Settings</span>
           </Link>
 
-          {/* Privacy Policy */}
           <Link
             href="/privacy-policy"
             onClick={() => setIsOpen(false)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '16px',
-              backgroundColor: 'transparent',
-              textDecoration: 'none',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-alata)',
-              color: '#1A4731',
-              fontSize: '16px',
-              textAlign: 'left',
-            }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'transparent', textDecoration: 'none', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '16px' }}
           >
             <Shield size={20} />
             <span>Privacy Policy</span>
           </Link>
 
-          {/* Terms of Service */}
           <Link
             href="/terms-of-service"
             onClick={() => setIsOpen(false)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '16px',
-              backgroundColor: 'transparent',
-              textDecoration: 'none',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-alata)',
-              color: '#1A4731',
-              fontSize: '16px',
-              textAlign: 'left',
-            }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'transparent', textDecoration: 'none', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '16px' }}
           >
             <Shield size={20} />
             <span>Terms of Service</span>
           </Link>
         </div>
 
-        {/* Logout button at bottom */}
+        {/* Logout */}
         <button
-          onClick={() => setIsOpen(false)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '16px',
-            backgroundColor: '#F4F5F4',
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-alata)',
-            color: '#dc2626',
-            fontSize: '16px',
-            textAlign: 'left',
-            borderTop: '1px solid #E0E0E0',
-          }}
+          onClick={handleLogout}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#F4F5F4', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#dc2626', fontSize: '16px', textAlign: 'left', borderTop: '1px solid #E0E0E0' }}
         >
           <LogOut size={20} />
           <span>Logout</span>

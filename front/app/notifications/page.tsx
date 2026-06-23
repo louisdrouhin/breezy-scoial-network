@@ -80,11 +80,11 @@ export default function Notifications() {
       <div style={{ flex: '0 0 100%', paddingRight: '20px', paddingLeft: '20px' }}>
 
         {/* Header */}
-        <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h1 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: 0, fontSize: '28px' }}>Notifications</h1>
+            <h1 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: 0, fontSize: '28px', whiteSpace: 'nowrap' }}>Notifications</h1>
             {unreadCount > 0 && (
-              <span style={{ backgroundColor: '#1A4731', color: 'white', fontFamily: 'var(--font-alata)', fontSize: '12px', borderRadius: '999px', padding: '2px 10px' }}>
+              <span style={{ backgroundColor: '#1A4731', color: 'white', fontFamily: 'var(--font-alata)', fontSize: '12px', borderRadius: '999px', padding: '2px 10px', flexShrink: 0 }}>
                 {unreadCount}
               </span>
             )}
@@ -93,7 +93,7 @@ export default function Notifications() {
             <button
               onClick={handleMarkAllAsRead}
               disabled={markingAll}
-              style={{ background: 'none', border: '1px solid #1A4731', borderRadius: '6px', padding: '8px 16px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: markingAll ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: markingAll ? 0.6 : 1 }}
+              style={{ background: 'none', border: '1px solid #1A4731', borderRadius: '6px', padding: '8px 16px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: markingAll ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: markingAll ? 0.6 : 1, whiteSpace: 'nowrap', flexShrink: 0 }}
             >
               Tout marquer comme lu
             </button>

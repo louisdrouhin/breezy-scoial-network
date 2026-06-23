@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}` : 'http://nginx');
+// En browser, on utilise l'origine courante (protocole+host+port) pour passer par le proxy Next.js
+// En SSR, on appelle Nginx directement via variable d'env ou fallback interne
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://nginx');
 
 // ----------------------------------------------------------------
 // Fetch avec refresh automatique sur 401
