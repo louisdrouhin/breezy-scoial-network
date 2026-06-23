@@ -12,7 +12,7 @@ export default function Settings() {
     >
       {/* Center Column */}
       <div
-        style={{ flex: '0 0 100%' }}
+        style={{ flex: 1, minWidth: 0 }}
         className="settings-content"
       >
         <SettingsContent />

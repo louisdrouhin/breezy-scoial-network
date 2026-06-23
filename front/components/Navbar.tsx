@@ -4,11 +4,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { House, CircleUser, Bell, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifCount } from "@/contexts/NotifContext";
+import { userAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const { logout, user } = useAuth();
+  const { unreadCount } = useNotifCount();
   const router = useRouter();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.username) return;
+    userAPI.getProfile(user.username).then(p => setAvatarUrl(p.avatarUrl ?? null)).catch(() => {});
+  }, [user?.username]);
 
   const handleLogout = async () => {
     await logout();
@@ -40,7 +50,7 @@ export default function Navbar() {
         <span>Home</span>
       </Link>
       <Link
-        href="/profile"
+        href={user ? `/profile/${user.username}` : "/profile"}
         style={{
           display: "flex",
           alignItems: "center",
@@ -63,10 +73,35 @@ export default function Navbar() {
           color: "white",
           textDecoration: "none",
           paddingLeft: "24px",
+          position: "relative",
         }}
         className="font-rubik"
       >
-        <Bell size={24} />
+        <div style={{ position: "relative", display: "flex" }}>
+          <Bell size={24} />
+          {unreadCount > 0 && (
+            <span style={{
+              position: "absolute",
+              top: "-6px",
+              right: "-6px",
+              backgroundColor: "#dc2626",
+              color: "white",
+              borderRadius: "999px",
+              fontSize: "10px",
+              fontFamily: "var(--font-alata)",
+              fontWeight: "bold",
+              minWidth: "16px",
+              height: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0 3px",
+              lineHeight: 1,
+            }}>
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </div>
         <span>Notifications</span>
       </Link>
       <Link
@@ -98,15 +133,23 @@ export default function Navbar() {
           paddingLeft: "12px",
         }}
       >
-        <div
-          style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "50%",
-            backgroundColor: "rgba(255, 255, 255, 0.3)",
-            flexShrink: 0,
-          }}
-        />
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={user?.username}
+            style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+          />
+        ) : (
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(255, 255, 255, 0.3)",
+              flexShrink: 0,
+            }}
+          />
+        )}
         <span style={{ color: "white", fontFamily: "var(--font-alata)" }}>
           {user?.username || "User"}
         </span>

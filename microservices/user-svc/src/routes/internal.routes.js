@@ -13,4 +13,6 @@ router.post(
   usersController.createProfile,
 );
 
+router.get("/:username/notif-prefs", usersController.getNotifPrefs);
+
 export default router;

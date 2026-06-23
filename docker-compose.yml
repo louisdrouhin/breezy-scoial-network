@@ -87,6 +87,10 @@ services:
     environment:
       DATABASE_URL: postgresql://${USER_DB_USER}:${USER_DB_PASSWORD}@user-postgres:5432/user_svc?schema=public
       PORT: 3002
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
+      UPLOADS_DIR: /uploads
+      NOTIF_SVC_URL: http://notif-svc:3004
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
     volumes:
       - ./microservices/user-svc/src:/prod/user-svc/src
       - ./microservices/user-svc/prisma:/prod/user-svc/prisma
@@ -134,6 +138,8 @@ services:
     environment:
       MONGODB_URI: mongodb://${POST_MONGO_USERNAME}:${POST_MONGO_PASSWORD}@post-mongo:27017/post_svc?authSource=admin
       PORT: 3003
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NOTIF_SVC_URL: http://notif-svc:3004
     volumes:
       - ./microservices/post-svc/src:/prod/post-svc/src
     command: pnpm dev
@@ -180,6 +186,8 @@ services:
     environment:
       MONGODB_URI: mongodb://${NOTIF_MONGO_USERNAME}:${NOTIF_MONGO_PASSWORD}@notif-mongo:27017/notif_svc?authSource=admin
       PORT: 3004
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SVC_URL: http://user-svc:3002
     volumes:
       - ./microservices/notif-svc/src:/prod/notif-svc/src
     command: pnpm dev
@@ -204,6 +212,9 @@ services:
       - "3005:3005"
     environment:
       PORT: 3005
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SVC_URL: http://user-svc:3002
+      POST_SVC_URL: http://post-svc:3003
     volumes:
       - ./microservices/feed-svc/src:/prod/feed-svc/src
     command: pnpm dev

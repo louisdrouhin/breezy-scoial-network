@@ -5,16 +5,42 @@ import { usePathname } from 'next/navigation';
 import { House, Search, Bell, CircleUser, Plus } from 'lucide-react';
 import { useState } from 'react';
 import MobilePostModal from './MobilePostModal';
+import { useNotifCount } from '@/contexts/NotifContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function MobileBottomBar() {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toast, setToast] = useState(false);
+  const { unreadCount } = useNotifCount();
+  const { user } = useAuth();
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
+  const profileHref = user ? `/profile/${user.username}` : '/profile';
+
+  const handlePostCreated = () => {
+    setToast(true);
+    setTimeout(() => setToast(false), 3000);
+  };
 
   return (
     <>
-      <MobilePostModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <MobilePostModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onPostCreated={handlePostCreated} />
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+          backgroundColor: '#1A4731', color: 'white', padding: '10px 20px',
+          borderRadius: '999px', fontFamily: 'var(--font-alata)', fontSize: '14px',
+          zIndex: 200, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          animation: 'slideUp 0.2s ease',
+        }}>
+          Post published!
+        </div>
+      )}
+
+      <style>{`@keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
 
       <div
         style={{
@@ -92,13 +118,38 @@ export default function MobileBottomBar() {
             padding: '8px',
             color: isActive('/notifications') ? '#1A4731' : '#999',
             textDecoration: 'none',
+            position: 'relative',
           }}
         >
-          <Bell size={24} />
+          <div style={{ position: 'relative', display: 'flex' }}>
+            <Bell size={24} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-6px',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontFamily: 'var(--font-alata)',
+                fontWeight: 'bold',
+                minWidth: '16px',
+                height: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 3px',
+                lineHeight: '1',
+              }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </div>
         </Link>
 
         <Link
-          href="/profile"
+          href={profileHref}
           style={{
             display: 'flex',
             flexDirection: 'column',

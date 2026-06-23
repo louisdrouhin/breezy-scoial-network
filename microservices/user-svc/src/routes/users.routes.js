@@ -3,6 +3,7 @@ import { extractUser, requireAuth } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import * as usersController from "../controllers/users.controller.js";
 
+
 import {
   GetPublicProfileSchema,
   UpdateProfileSchema,
@@ -13,6 +14,9 @@ const router = express.Router();
 
 // Appliquer extractUser à toutes les routes
 router.use(extractUser);
+
+// Route de recherche — AVANT /:username pour éviter le conflit
+router.get("/search", usersController.searchUsers);
 
 // Protected routes (besoin de requireAuth) - AVANT les routes avec :username
 router.get("/me", requireAuth, usersController.getMyProfile);

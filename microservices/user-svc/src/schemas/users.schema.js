@@ -6,6 +6,8 @@ export const ProfileSchema = z.object({
   bio: z.string().max(160).nullable().optional(),
   avatarUrl: z.string().url().nullable().optional(),
   bannerUrl: z.string().url().nullable().optional(),
+  notifLikes: z.boolean().optional(),
+  notifFollows: z.boolean().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

@@ -28,6 +28,10 @@ const postSchema = new Schema(
       type: Number,
       default: 0,
     },
+    edited: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
