@@ -46,7 +46,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
       setText('');
       onPostCreated?.(post);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur lors de la publication');
+      setError(e instanceof Error ? e.message : 'Failed to publish post');
     } finally {
       setIsLoading(false);
     }

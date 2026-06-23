@@ -78,7 +78,7 @@ export default function SearchBar() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un utilisateur..."
+          placeholder="Search for a user..."
           style={{
             flex: 1,
             border: 'none',
@@ -162,7 +162,7 @@ export default function SearchBar() {
             zIndex: 100,
           }}
         >
-          <p style={{ margin: 0, fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#999' }}>Aucun utilisateur trouvé</p>
+          <p style={{ margin: 0, fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#999' }}>No users found</p>
         </div>
       )}
 

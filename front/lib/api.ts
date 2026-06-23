@@ -70,6 +70,8 @@ export interface Profile {
   bio: string | null;
   avatarUrl: string | null;
   bannerUrl: string | null;
+  notifLikes: boolean;
+  notifFollows: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -304,7 +306,7 @@ export const userAPI = {
     return res.json();
   },
 
-  updateMe: async (data: { displayName?: string; bio?: string }): Promise<Profile> => {
+  updateMe: async (data: { displayName?: string | null; bio?: string | null; notifLikes?: boolean; notifFollows?: boolean }): Promise<Profile> => {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/users/me`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

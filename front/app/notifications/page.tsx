@@ -95,16 +95,16 @@ export default function Notifications() {
               disabled={markingAll}
               style={{ background: 'none', border: '1px solid #1A4731', borderRadius: '6px', padding: '8px 16px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: markingAll ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: markingAll ? 0.6 : 1, whiteSpace: 'nowrap', flexShrink: 0 }}
             >
-              Tout marquer comme lu
+              Mark all as read
             </button>
           )}
         </div>
 
         {/* Liste */}
         {isLoading ? (
-          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '40px' }}>Chargement...</p>
+          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '40px' }}>Loading...</p>
         ) : notifs.length === 0 ? (
-          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '60px' }}>Aucune notification pour le moment.</p>
+          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '60px' }}>No notifications yet.</p>
         ) : (
           notifs.map(notif => (
             <Notification

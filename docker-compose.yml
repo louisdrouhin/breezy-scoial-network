@@ -87,6 +87,10 @@ services:
     environment:
       DATABASE_URL: postgresql://${USER_DB_USER}:${USER_DB_PASSWORD}@user-postgres:5432/user_svc?schema=public
       PORT: 3002
+      PUBLIC_URL: http://localhost
+      UPLOADS_DIR: /uploads
+      NOTIF_SVC_URL: http://notif-svc:3004
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
     volumes:
       - ./microservices/user-svc/src:/prod/user-svc/src
       - ./microservices/user-svc/prisma:/prod/user-svc/prisma
@@ -183,6 +187,7 @@ services:
       MONGODB_URI: mongodb://${NOTIF_MONGO_USERNAME}:${NOTIF_MONGO_PASSWORD}@notif-mongo:27017/notif_svc?authSource=admin
       PORT: 3004
       INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SVC_URL: http://user-svc:3002
     volumes:
       - ./microservices/notif-svc/src:/prod/notif-svc/src
     command: pnpm dev

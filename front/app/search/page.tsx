@@ -54,7 +54,7 @@ export default function SearchPage() {
       <div style={{ flex: 1, padding: '20px' }} className="search-inner">
 
         <h1 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 16px 0', fontSize: '28px' }}>
-          Recherche
+          Search
         </h1>
 
         {/* Input */}
@@ -74,7 +74,7 @@ export default function SearchPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher un utilisateur..."
+            placeholder="Search for a user..."
             style={{
               flex: 1, border: 'none', outline: 'none',
               fontFamily: 'var(--font-alata)', color: '#1A4731',
@@ -89,14 +89,14 @@ export default function SearchPage() {
         {/* État vide */}
         {!searched && !isLoading && (
           <p style={{ textAlign: 'center', paddingTop: '60px', fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px' }}>
-            Commence à taper pour rechercher
+            Start typing to search
           </p>
         )}
 
         {/* Aucun résultat */}
         {searched && results.length === 0 && !isLoading && (
           <p style={{ textAlign: 'center', paddingTop: '40px', fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px' }}>
-            Aucun utilisateur trouvé pour &quot;{query}&quot;
+            No users found for &quot;{query}&quot;
           </p>
         )}
 

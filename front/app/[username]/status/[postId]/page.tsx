@@ -96,14 +96,14 @@ export default function StatusPage({ params }: StatusPageProps) {
   };
 
   if (isLoading) {
-    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)' }}>Chargement...</div>;
+    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)' }}>Loading...</div>;
   }
 
   if (!post) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'var(--font-alata)', color: '#999' }}>Post introuvable</p>
-        <Link href="/"><button style={{ color: '#1A4731', cursor: 'pointer', border: 'none', background: 'none', fontFamily: 'var(--font-alata)' }}>Retour à l'accueil</button></Link>
+        <p style={{ fontFamily: 'var(--font-alata)', color: '#999' }}>Post not found</p>
+        <Link href="/"><button style={{ color: '#1A4731', cursor: 'pointer', border: 'none', background: 'none', fontFamily: 'var(--font-alata)' }}>Back to home</button></Link>
       </div>
     );
   }
@@ -173,13 +173,13 @@ export default function StatusPage({ params }: StatusPageProps) {
           </div>
 
           {/* Reply input */}
-          <PostBar onPostCreated={handleReplyCreated} parentId={post._id} placeholder="Écrire une réponse..." />
+          <PostBar onPostCreated={handleReplyCreated} parentId={post._id} placeholder="Write a reply..." />
 
           {/* Replies */}
           {replies.length > 0 && (
             <div>
               <h3 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', fontSize: '14px', margin: '0 0 16px 0' }}>
-                Réponses ({replies.length})
+                Replies ({replies.length})
               </h3>
               {replies.map(reply => (
                 <div key={reply._id} style={{ display: 'flex', gap: '12px', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #F4F5F4' }}>

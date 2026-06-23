@@ -38,7 +38,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
       onClose();
       onPostCreated?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur lors de la publication');
+      setError(e instanceof Error ? e.message : 'Failed to publish post');
     } finally {
       setIsLoading(false);
     }

@@ -111,28 +111,9 @@ export default function ProfileHeader({
           zIndex: 1,
         }}
       >
-        {/* Coin haut droite : bouton follow OU menu 3 points */}
+        {/* Menu 3 points (own profile) — reste en absolute */}
         <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10 }}>
-          {onFollowToggle ? (
-            <button
-              onClick={onFollowToggle}
-              disabled={followLoading}
-              style={{
-                padding: '8px 20px',
-                backgroundColor: isFollowing ? 'transparent' : '#1A4731',
-                color: isFollowing ? '#1A4731' : 'white',
-                border: '2px solid #1A4731',
-                borderRadius: '999px',
-                fontFamily: 'var(--font-alata)',
-                fontSize: '14px',
-                cursor: followLoading ? 'not-allowed' : 'pointer',
-                opacity: followLoading ? 0.6 : 1,
-                transition: 'all 0.15s',
-              }}
-            >
-              {followLoading ? '...' : isFollowing ? 'Se désabonner' : "S'abonner"}
-            </button>
-          ) : onProfileUpdate ? (
+          {onFollowToggle ? null : onProfileUpdate ? (
             <div ref={menuRef}>
               <button
                 onClick={() => setShowMenu(!showMenu)}
@@ -174,6 +155,7 @@ export default function ProfileHeader({
           ) : null}
         </div>
 
+
         {/* Avatar + User Info */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px', marginBottom: '24px' }}>
           {avatarUrl ? (
@@ -209,19 +191,19 @@ export default function ProfileHeader({
                     disabled={isSaving}
                     style={{ padding: '6px 16px', backgroundColor: '#1A4731', color: 'white', border: 'none', borderRadius: '4px', fontFamily: 'var(--font-alata)', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.6 : 1 }}
                   >
-                    {isSaving ? '...' : 'Enregistrer'}
+                    {isSaving ? '...' : 'Save'}
                   </button>
                   <button
                     onClick={() => { setEditingBio(false); setBioText(bio); }}
                     style={{ padding: '6px 16px', backgroundColor: 'transparent', color: '#1A4731', border: '1px solid #1A4731', borderRadius: '4px', fontFamily: 'var(--font-alata)', cursor: 'pointer' }}
                   >
-                    Annuler
+                    Cancel
                   </button>
                 </div>
               </div>
             ) : (
               <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0, marginBottom: '16px' }}>
-                {bio || <span style={{ color: '#ccc' }}>Aucune bio</span>}
+                {bio || <span style={{ color: '#ccc' }}>No bio</span>}
               </p>
             )}
 
@@ -236,8 +218,33 @@ export default function ProfileHeader({
                 <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0, fontSize: '12px' }}>Following</p>
               </div>
             </div>
+
           </div>
         </div>
+
+        {/* Follow/Unfollow button — full width below the avatar+info block */}
+        {onFollowToggle && (
+          <button
+            onClick={onFollowToggle}
+            disabled={followLoading}
+            style={{
+              width: '100%',
+              marginTop: '16px',
+              padding: '10px',
+              backgroundColor: isFollowing ? 'transparent' : '#1A4731',
+              color: isFollowing ? '#1A4731' : 'white',
+              border: '2px solid #1A4731',
+              borderRadius: '8px',
+              fontFamily: 'var(--font-alata)',
+              fontSize: '14px',
+              cursor: followLoading ? 'not-allowed' : 'pointer',
+              opacity: followLoading ? 0.6 : 1,
+              transition: 'all 0.15s',
+            }}
+          >
+            {followLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
+          </button>
+        )}
       </div>
     </div>
   );

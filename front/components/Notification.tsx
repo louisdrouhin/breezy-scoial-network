@@ -15,10 +15,10 @@ interface NotificationProps {
 }
 
 const TYPE_CONFIG = {
-  LIKE:         { emoji: '❤️', label: 'a aimé votre post' },
-  COMMENT:      { emoji: '💬', label: 'a commenté votre post' },
-  NEW_FOLLOWER: { emoji: '👤', label: 'a commencé à vous suivre' },
-  MENTION:      { emoji: '🔔', label: 'vous a mentionné' },
+  LIKE:         { emoji: '❤️', label: 'liked your post' },
+  COMMENT:      { emoji: '💬', label: 'commented on your post' },
+  NEW_FOLLOWER: { emoji: '👤', label: 'started following you' },
+  MENTION:      { emoji: '🔔', label: 'mentioned you' },
 };
 
 function formatDate(dateString: string) {
@@ -28,11 +28,11 @@ function formatDate(dateString: string) {
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 1) return 'à l\'instant';
+  if (diffMins < 1) return 'just now';
   if (diffMins < 60) return `${diffMins}m`;
   if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays < 7) return `${diffDays}j`;
-  return date.toLocaleDateString('fr-FR');
+  if (diffDays < 7) return `${diffDays}d`;
+  return date.toLocaleDateString('en-US');
 }
 
 export default function Notification({ id, type, actorUsername, relatedPostId, read, createdAt, onMarkAsRead, onDelete }: NotificationProps) {
@@ -102,7 +102,7 @@ export default function Notification({ id, type, actorUsername, relatedPostId, r
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999', display: 'flex' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
           onMouseLeave={e => (e.currentTarget.style.color = '#999')}
-          title="Supprimer"
+          title="Delete"
         >
           <Trash2 size={16} />
         </button>

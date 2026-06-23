@@ -147,7 +147,7 @@ export default function Post({
               </p>
             </Link>
             {isEdited && (
-              <span style={{ fontFamily: 'var(--font-alata)', color: '#999', fontSize: '11px' }}>· modifié</span>
+              <span style={{ fontFamily: 'var(--font-alata)', color: '#999', fontSize: '11px' }}>· edited</span>
             )}
           </div>
           <p style={{ margin: 0, fontFamily: 'var(--font-alata)', color: '#666', fontSize: '12px' }}>
@@ -158,7 +158,7 @@ export default function Post({
           <button
             onClick={() => setIsEditing(true)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999', flexShrink: 0 }}
-            title="Modifier"
+            title="Edit"
           >
             <Pencil size={15} />
           </button>
@@ -179,14 +179,14 @@ export default function Post({
               onClick={() => { setIsEditing(false); setEditText(currentContent); }}
               style={{ padding: '6px 14px', background: 'none', border: '1px solid #1A4731', borderRadius: '4px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: 'pointer', fontSize: '13px' }}
             >
-              Annuler
+              Cancel
             </button>
             <button
               onClick={handleEditSave}
               disabled={editLoading || !editText.trim()}
               style={{ padding: '6px 14px', backgroundColor: '#1A4731', border: 'none', borderRadius: '4px', fontFamily: 'var(--font-alata)', color: 'white', cursor: editLoading || !editText.trim() ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: editLoading || !editText.trim() ? 0.6 : 1 }}
             >
-              {editLoading ? '...' : 'Enregistrer'}
+              {editLoading ? '...' : 'Save'}
             </button>
           </div>
         </div>

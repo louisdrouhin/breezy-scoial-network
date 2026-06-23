@@ -56,7 +56,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           setIsFollowing(myFollowing.some(f => f['followed.username'] === username));
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Erreur');
+        setError(e instanceof Error ? e.message : 'An error occurred');
       } finally {
         setIsLoading(false);
       }
@@ -121,11 +121,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   };
 
   if (isLoading) {
-    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)' }}>Chargement...</div>;
+    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)' }}>Loading...</div>;
   }
 
   if (error || !profile) {
-    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)', color: '#999' }}>Profil introuvable</div>;
+    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)', color: '#999' }}>Profile not found</div>;
   }
 
   return (
@@ -157,7 +157,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
           {posts.length === 0 ? (
             <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '40px' }}>
-              Aucun post pour le moment
+              No posts yet
             </p>
           ) : (
             posts.map(post => (
@@ -178,13 +178,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
           {isLoadingMore && (
             <div style={{ textAlign: 'center', padding: '20px', fontFamily: 'var(--font-alata)', color: '#999' }}>
-              Chargement...
+              Loading...
             </div>
           )}
 
           {!hasMore && posts.length > 0 && (
             <div style={{ textAlign: 'center', padding: '24px', fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px', borderTop: '1px solid #E0E0E0', marginTop: '8px' }}>
-              Tous les posts ont été chargés
+              All posts loaded
             </div>
           )}
 

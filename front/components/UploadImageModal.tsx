@@ -35,8 +35,8 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
 
   const handleFile = (f: File) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowed.includes(f.type)) { setError('Format non supporté. JPG, PNG, WEBP ou GIF.'); return; }
-    if (f.size > 5 * 1024 * 1024) { setError('Fichier trop volumineux (max 5 Mo).'); return; }
+    if (!allowed.includes(f.type)) { setError('Unsupported format. Use JPG, PNG, WEBP or GIF.'); return; }
+    if (f.size > 5 * 1024 * 1024) { setError('File too large (max 5 MB).'); return; }
     setError(null);
     const url = URL.createObjectURL(f);
     setImageSrc(url);
@@ -134,13 +134,13 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
       await onUpload(file);
       onClose();
     } catch {
-      setError("Échec de l'upload. Réessaie.");
+      setError('Upload failed. Please try again.');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const label = type === 'avatar' ? 'photo de profil' : 'bannière';
+  const label = type === 'avatar' ? 'profile picture' : 'banner';
 
   return (
     <div
@@ -152,7 +152,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2 style={{ margin: 0, fontFamily: 'var(--font-rubik)', color: '#1A4731', fontSize: '18px' }}>
-            Modifier la {label}
+            Edit {label}
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#666' }}>
             <X size={20} />
@@ -163,7 +163,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
           <>
             {/* Éditeur de position */}
             <p style={{ margin: '0 0 8px', fontFamily: 'var(--font-alata)', color: '#666', fontSize: '12px', textAlign: 'center' }}>
-              Glisse pour repositionner · Molette pour zoomer
+              Drag to reposition · Scroll to zoom
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
               <div
@@ -205,7 +205,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
                 onClick={() => fileInputRef.current?.click()}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: '1px solid #ccc', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#666', fontSize: '13px' }}
               >
-                <Upload size={14} /> Changer d'image
+                <Upload size={14} /> Change image
               </button>
             </div>
           </>
@@ -226,10 +226,10 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
               <ImageIcon size={36} color="#ccc" />
               <p style={{ margin: 0, fontFamily: 'var(--font-alata)', color: '#666', fontSize: '14px' }}>
-                Glisse une image ici ou clique pour choisir
+                Drag an image here or click to choose
               </p>
               <p style={{ margin: 0, fontFamily: 'var(--font-alata)', color: '#999', fontSize: '12px' }}>
-                JPG, PNG, WEBP, GIF — max 5 Mo
+                JPG, PNG, WEBP, GIF — max 5 MB
               </p>
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
             onClick={onClose}
             style={{ padding: '10px 20px', background: 'none', border: '1px solid #1A4731', borderRadius: '6px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: 'pointer' }}
           >
-            Annuler
+            Cancel
           </button>
           <button
             onClick={handleSubmit}
@@ -267,7 +267,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
               opacity: !imageSrc || isUploading ? 0.6 : 1,
             }}
           >
-            {isUploading ? 'Envoi...' : 'Enregistrer'}
+            {isUploading ? 'Uploading...' : 'Save'}
           </button>
         </div>
       </div>

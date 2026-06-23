@@ -111,7 +111,7 @@ export default function Home() {
             borderRadius: '999px', fontFamily: 'var(--font-alata)', fontSize: '14px',
             zIndex: 200, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
           }}>
-            Post publié !
+            Post published!
           </div>
         )}
 
@@ -124,7 +124,7 @@ export default function Home() {
               color: '#999',
             }}
           >
-            Aucun post à afficher. Suivez des utilisateurs pour voir leur contenu ici.
+            No posts yet. Follow some users to see their content here.
           </div>
         )}
 
@@ -146,7 +146,7 @@ export default function Home() {
 
         {isLoading && (
           <div style={{ textAlign: 'center', padding: '20px', fontFamily: 'var(--font-alata)', color: '#999' }}>
-            Chargement...
+            Loading...
           </div>
         )}
 
@@ -162,7 +162,7 @@ export default function Home() {
               marginTop: '8px',
             }}
           >
-            Vous êtes à jour
+            You're all caught up
           </div>
         )}
 

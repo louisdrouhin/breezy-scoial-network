@@ -1,5 +1,6 @@
 import { Op } from "sequelize";
 import { Profile, Follow } from "../models/index.js";
+import { notifyFollow } from "../services/notif.service.js";
 
 export const getPublicProfile = async (req, res) => {
   const { username } = req.validated;
@@ -61,6 +62,16 @@ export const searchUsers = async (req, res) => {
   });
 
   return res.json(profiles);
+};
+
+export const getNotifPrefs = async (req, res) => {
+  const { username } = req.params;
+  const profile = await Profile.findOne({
+    where: { username },
+    attributes: ['notifLikes', 'notifFollows'],
+  });
+  if (!profile) return res.status(404).json({ error: 'Profile not found' });
+  res.json({ notifLikes: profile.notifLikes ?? true, notifFollows: profile.notifFollows ?? true });
 };
 
 export const createProfile = async (req, res) => {
@@ -128,6 +139,8 @@ export const followUser = async (req, res) => {
     followerUsername,
     followedUsername: username,
   });
+
+  notifyFollow(username, followerUsername);
 
   res.status(200).json({ followed: true });
 };

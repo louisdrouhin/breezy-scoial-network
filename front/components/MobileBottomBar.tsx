@@ -36,7 +36,7 @@ export default function MobileBottomBar() {
           zIndex: 200, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
           animation: 'slideUp 0.2s ease',
         }}>
-          Post publié !
+          Post published!
         </div>
       )}
 
