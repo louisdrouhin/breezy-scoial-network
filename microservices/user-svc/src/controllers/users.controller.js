@@ -46,6 +46,32 @@ export const updateMyProfile = async (req, res) => {
   res.status(200).json(updatedProfile);
 };
 
+export const uploadAvatar = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+  const { username } = req.user;
+  // URL relative servie par Nginx (location /uploads/). On stocke le chemin
+  // relatif et non une URL absolue : le front la résout via son origin.
+  const avatarUrl = `/uploads/${req.file.filename}`;
+
+  await Profile.update({ avatarUrl }, { where: { username } });
+
+  res.status(200).json({ avatarUrl });
+};
+
+export const uploadBanner = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+  const { username } = req.user;
+  const bannerUrl = `/uploads/${req.file.filename}`;
+
+  await Profile.update({ bannerUrl }, { where: { username } });
+
+  res.status(200).json({ bannerUrl });
+};
+
 export const searchUsers = async (req, res) => {
   const q = (req.query.q || '').trim();
   if (!q) return res.status(400).json({ error: 'Missing query parameter q' });

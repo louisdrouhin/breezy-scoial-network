@@ -1,6 +1,7 @@
 import express from "express";
 import { extractUser, requireAuth } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
+import { uploadImage } from "../middlewares/upload.middleware.js";
 import * as usersController from "../controllers/users.controller.js";
 
 
@@ -26,6 +27,11 @@ router.patch(
   validate(UpdateProfileSchema, "body"),
   usersController.updateMyProfile,
 );
+
+// Upload avatar / bannière (multipart, champ "file"). requireAuth AVANT multer
+// pour que req.user.username soit dispo au nommage du fichier.
+router.post("/me/avatar", requireAuth, uploadImage, usersController.uploadAvatar);
+router.post("/me/banner", requireAuth, uploadImage, usersController.uploadBanner);
 
 // Public routes (pas besoin de requireAuth)
 router.get(
