@@ -87,7 +87,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${USER_DB_USER}:${USER_DB_PASSWORD}@user-postgres:5432/user_svc?schema=public
       PORT: 3002
-      PUBLIC_URL: http://localhost
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
       UPLOADS_DIR: /uploads
       NOTIF_SVC_URL: http://notif-svc:3004
       INTERNAL_SECRET: ${INTERNAL_SECRET}
