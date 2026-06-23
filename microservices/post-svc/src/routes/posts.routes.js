@@ -5,7 +5,9 @@ import {
   getPost,
   getReplies,
   getPostsByUser,
+  updatePost,
   deletePost,
+  getLikeStatus,
   likePost,
   unlikePost,
   getPostsByTag,
@@ -20,7 +22,9 @@ router.get('/tags/:tag', getPostsByTag)
 router.get('/user/:username', getPostsByUser)
 router.get('/:id', getPost)
 router.get('/:id/replies', getReplies)
+router.patch('/:id', updatePost)
 router.delete('/:id', deletePost)
+router.get('/:id/like', getLikeStatus)
 router.post('/:id/like', likePost)
 router.delete('/:id/like', unlikePost)
 

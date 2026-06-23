@@ -158,4 +158,31 @@ async function logout(refreshToken) {
   await token.destroy();
 }
 
-export { register, login, refresh, logout };
+async function updateAccount(username, { email, password, currentPassword }) {
+  const account = await Account.findByPk(username);
+  if (!account) throw new Error('Account not found');
+
+  // Mot de passe actuel obligatoire pour toute modification
+  const isValid = await comparePassword(currentPassword, account.passwordHash);
+  if (!isValid) throw new Error('Mot de passe actuel incorrect');
+
+  const updates = {};
+
+  if (email && email !== account.email) {
+    const existing = await Account.findOne({ where: { email } });
+    if (existing) throw new Error('Email déjà utilisé');
+    updates.email = email;
+  }
+
+  if (password) {
+    if (password.length < 8) throw new Error('Le mot de passe doit faire au moins 8 caractères');
+    updates.passwordHash = await hashPassword(password);
+  }
+
+  if (Object.keys(updates).length === 0) throw new Error('Aucune modification détectée');
+
+  await account.update(updates);
+  return { username: account.username, email: updates.email ?? account.email };
+}
+
+export { register, login, refresh, logout, updateAccount };

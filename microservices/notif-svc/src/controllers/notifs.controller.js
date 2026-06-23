@@ -8,7 +8,7 @@ export const getNotifs = async (req, res) => {
         return res.status(400).json({ message: 'Missing arguments' })
     }
 
-    const allowedTypes = role === 'user'
+    const allowedTypes = role?.toUpperCase() === 'USER' || role?.toUpperCase() === 'ADMIN' || role?.toUpperCase() === 'MOD'
         ? ['MENTION', 'LIKE', 'NEW_FOLLOWER', 'COMMENT']
         : ['MENTION']
 
@@ -49,6 +49,24 @@ export const markAllAsRead = async (req, res) => {
     )
 
     return res.status(200).json({ updated: result.modifiedCount })
+}
+
+export const deleteNotif = async (req, res) => {
+    const username = req.get('x-user-username')
+    const { id } = req.params
+
+    if (!username || !id) {
+        return res.status(400).json({ message: 'Missing arguments' })
+    }
+
+    const notif = await Notification.findById(id)
+
+    if (!notif) return res.status(404).json({ message: 'Notification not found' })
+    if (notif.recipientUsername !== username) return res.status(403).json({ message: 'Forbidden' })
+
+    await Notification.findByIdAndDelete(id)
+
+    return res.status(204).send()
 }
 
 export const createNotif = async (req, res) => {

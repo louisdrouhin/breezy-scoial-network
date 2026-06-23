@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { Profile, Follow } from "../models/index.js";
 
 export const getPublicProfile = async (req, res) => {
@@ -42,6 +43,24 @@ export const updateMyProfile = async (req, res) => {
   });
 
   res.status(200).json(updatedProfile);
+};
+
+export const searchUsers = async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
+
+  const profiles = await Profile.findAll({
+    where: {
+      [Op.or]: [
+        { username: { [Op.iLike]: `%${q}%` } },
+        { displayName: { [Op.iLike]: `%${q}%` } },
+      ],
+    },
+    attributes: ['username', 'displayName', 'avatarUrl'],
+    limit: 10,
+  });
+
+  return res.json(profiles);
 };
 
 export const createProfile = async (req, res) => {

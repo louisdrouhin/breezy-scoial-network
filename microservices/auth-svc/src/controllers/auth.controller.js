@@ -106,10 +106,34 @@ function validateCookie(req, res) {
 
     res.set('X-User-Username', decoded.username);
     res.set('X-User-Role', decoded.role);
-    return res.status(200).json({ message: 'Cookie is valid' });
+    return res.status(200).json({ username: decoded.username, role: decoded.role });
   } catch (err) {
     return res.status(401).json({ message: 'Token verification failed' });
   }
 }
 
-export { register, login, refresh, logout, validate, validateCookie };
+async function updateAccount(req, res) {
+  const accessToken = req.cookies.accessToken;
+  if (!accessToken) return res.status(401).json({ message: 'Non authentifié' });
+
+  let username;
+  try {
+    const decoded = verifyToken(accessToken);
+    username = decoded.username;
+  } catch {
+    return res.status(401).json({ message: 'Token invalide' });
+  }
+
+  const { email, password, currentPassword } = req.body;
+  if (!currentPassword) return res.status(400).json({ message: 'Le mot de passe actuel est requis' });
+  if (!email && !password) return res.status(400).json({ message: 'Aucune modification fournie' });
+
+  try {
+    const result = await authService.updateAccount(username, { email, password, currentPassword });
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+}
+
+export { register, login, refresh, logout, validate, validateCookie, updateAccount };

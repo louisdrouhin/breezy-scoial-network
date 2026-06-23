@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation';
 import { House, Search, Bell, CircleUser, Plus } from 'lucide-react';
 import { useState } from 'react';
 import MobilePostModal from './MobilePostModal';
+import { useNotifCount } from '@/contexts/NotifContext';
 
 export default function MobileBottomBar() {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { unreadCount } = useNotifCount();
 
   const isActive = (path: string) => pathname === path;
 
@@ -92,9 +94,34 @@ export default function MobileBottomBar() {
             padding: '8px',
             color: isActive('/notifications') ? '#1A4731' : '#999',
             textDecoration: 'none',
+            position: 'relative',
           }}
         >
-          <Bell size={24} />
+          <div style={{ position: 'relative', display: 'flex' }}>
+            <Bell size={24} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-6px',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontFamily: 'var(--font-alata)',
+                fontWeight: 'bold',
+                minWidth: '16px',
+                height: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 3px',
+                lineHeight: '1',
+              }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </div>
         </Link>
 
         <Link

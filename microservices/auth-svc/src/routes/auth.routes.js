@@ -10,5 +10,6 @@ router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
 router.get('/validate', authenticate, authController.validate);
 router.get('/validate-cookie', authController.validateCookie);
+router.patch('/me', authController.updateAccount);
 
 export default router;

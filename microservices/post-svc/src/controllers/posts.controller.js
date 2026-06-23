@@ -62,6 +62,28 @@ export const getPostsByUser = async (req, res) => {
   return res.json(posts)
 }
 
+export const updatePost = async (req, res) => {
+  const username = req.get('x-user-username')
+  if (!username) return res.status(401).json({ message: 'Non authentifié' })
+
+  const { content } = req.body
+  if (!content || !content.trim()) return res.status(400).json({ message: 'Le contenu est requis' })
+  if (content.length > 280) return res.status(400).json({ message: 'Contenu trop long (280 caractères max)' })
+
+  const post = await Post.findById(req.params.id)
+  if (!post) return res.status(404).json({ message: 'Post introuvable' })
+  if (post.authorUsername !== username) return res.status(403).json({ message: 'Interdit' })
+
+  const tags = [...new Set((content.match(/#(\w+)/g) ?? []).map(t => t.slice(1)))]
+  const updated = await Post.findByIdAndUpdate(
+    req.params.id,
+    { content: content.trim(), tags, edited: true },
+    { new: true }
+  )
+
+  return res.json({ post: updated })
+}
+
 export const deletePost = async (req, res) => {
   const username = req.get('x-user-username')
   const role = req.get('x-user-role')
@@ -82,6 +104,13 @@ export const deletePost = async (req, res) => {
   await Like.deleteMany({ post: req.params.id })
 
   return res.status(204).send()
+}
+
+export const getLikeStatus = async (req, res) => {
+  const username = req.get('x-user-username')
+  if (!username) return res.status(401).json({ message: 'Non authentifié' })
+  const existing = await Like.findOne({ username, post: req.params.id })
+  return res.json({ liked: !!existing })
 }
 
 export const likePost = async (req, res) => {
