@@ -183,6 +183,9 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NGINX_URL: ${NGINX_URL}
+      # pnpm fait un check de deps au démarrage qui veut purger node_modules ;
+      # sans TTY (conteneur) il s'interrompt. CI=true le rend non-interactif.
+      CI: "true"
     networks:
       - frontend
     restart: always

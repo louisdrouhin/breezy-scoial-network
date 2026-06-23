@@ -7,6 +7,9 @@ FROM base AS build
 COPY . /usr/src/app
 WORKDIR /usr/src/app
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Build de production du front (genere front/.next) AVANT le deploy.
+# Sans ca, `next start` echoue : "Could not find a production build".
+RUN pnpm --filter front build
 RUN pnpm deploy --filter=auth-svc --prod /prod/auth-svc
 RUN pnpm deploy --filter=user-svc --prod /prod/user-svc
 RUN pnpm deploy --filter=post-svc --prod /prod/post-svc
@@ -56,6 +59,10 @@ CMD ["pnpm", "start"]
 
 FROM base AS frontend
 COPY --from=build /prod/frontend /prod/frontend
+# `.next` est gitignore donc absent du `pnpm deploy` : on le copie explicitement
+# depuis l'etape build (idem public/ par securite).
+COPY --from=build /usr/src/app/front/.next /prod/frontend/.next
+COPY --from=build /usr/src/app/front/public /prod/frontend/public
 WORKDIR /prod/frontend
 EXPOSE 3000
 CMD ["pnpm", "start"]
