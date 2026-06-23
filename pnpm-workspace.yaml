@@ -3,3 +3,8 @@ packages:
   - 'front'
 
 injectWorkspacePackages: true
+
+pnpm:
+  confirmModulesPurge: false
+  allowBuilds:
+    sharp: true

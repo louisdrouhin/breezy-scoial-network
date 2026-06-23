@@ -1,12 +1,10 @@
 import { Sequelize } from 'sequelize';
 
 const getDatabaseUrl = () => {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    return 'postgresql://postgres:postgres@localhost:5432/auth_svc';
-  }
-  // Remove Prisma-specific parameters (e.g., ?schema=public)
-  return url.split('?')[0];
+  return (
+    process.env.DATABASE_URL ||
+    'postgresql://postgres:postgres@localhost:5432/auth_svc'
+  );
 };
 
 const sequelize = new Sequelize(getDatabaseUrl(), {

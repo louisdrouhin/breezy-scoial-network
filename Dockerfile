@@ -14,6 +14,16 @@ RUN pnpm deploy --filter=notif-svc --prod /prod/notif-svc
 RUN pnpm deploy --filter=feed-svc --prod /prod/feed-svc
 RUN pnpm deploy --filter=front --prod /prod/frontend
 
+# Cible de developpement : monorepo complet avec toutes les deps (dev incluses),
+# pnpm epingle (packageManager racine) et pnpm-workspace.yaml presents. Pas de
+# `pnpm deploy --prod` ici : le dev a besoin des devDependencies (ex. next dev)
+# et d'un environnement aligne sur la racine. Le compose de dev monte les sources
+# par-dessus pour le hot reload (`node --watch` / `next dev`).
+FROM base AS dev
+COPY . /usr/src/app
+WORKDIR /usr/src/app
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+
 FROM base AS auth-svc
 COPY --from=build /prod/auth-svc /prod/auth-svc
 WORKDIR /prod/auth-svc

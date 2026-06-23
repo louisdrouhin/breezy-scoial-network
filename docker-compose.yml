@@ -29,20 +29,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: auth-svc
+      target: dev
     container_name: auth-svc
+    working_dir: /usr/src/app/microservices/auth-svc
     profiles:
       - auth
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@auth-postgres:5432/auth_svc?schema=public
+      DATABASE_URL: postgresql://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@auth-postgres:5432/auth_svc
       PORT: 3001
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
     volumes:
-      - ./microservices/auth-svc/src:/prod/auth-svc/src
-      - ./microservices/auth-svc/prisma:/prod/auth-svc/prisma
+      - ./microservices/auth-svc/src:/usr/src/app/microservices/auth-svc/src
     command: pnpm dev
     depends_on:
       auth-postgres:
@@ -78,22 +78,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: user-svc
+      target: dev
     container_name: user-svc
+    working_dir: /usr/src/app/microservices/user-svc
     profiles:
       - user
     ports:
       - "3002:3002"
     environment:
-      DATABASE_URL: postgresql://${USER_DB_USER}:${USER_DB_PASSWORD}@user-postgres:5432/user_svc?schema=public
+      DATABASE_URL: postgresql://${USER_DB_USER}:${USER_DB_PASSWORD}@user-postgres:5432/user_svc
       PORT: 3002
-      PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
       UPLOADS_DIR: /uploads
-      NOTIF_SVC_URL: http://notif-svc:3004
+      NOTIF_SVC_URL: ${NOTIF_SVC_URL}
       INTERNAL_SECRET: ${INTERNAL_SECRET}
     volumes:
-      - ./microservices/user-svc/src:/prod/user-svc/src
-      - ./microservices/user-svc/prisma:/prod/user-svc/prisma
+      - ./microservices/user-svc/src:/usr/src/app/microservices/user-svc/src
+      - uploads:/uploads
     command: pnpm dev
     depends_on:
       user-postgres:
@@ -129,8 +129,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: post-svc
+      target: dev
     container_name: post-svc
+    working_dir: /usr/src/app/microservices/post-svc
     profiles:
       - post
     ports:
@@ -139,9 +140,9 @@ services:
       MONGODB_URI: mongodb://${POST_MONGO_USERNAME}:${POST_MONGO_PASSWORD}@post-mongo:27017/post_svc?authSource=admin
       PORT: 3003
       INTERNAL_SECRET: ${INTERNAL_SECRET}
-      NOTIF_SVC_URL: http://notif-svc:3004
+      NOTIF_SVC_URL: ${NOTIF_SVC_URL}
     volumes:
-      - ./microservices/post-svc/src:/prod/post-svc/src
+      - ./microservices/post-svc/src:/usr/src/app/microservices/post-svc/src
     command: pnpm dev
     depends_on:
       post-mongo:
@@ -177,8 +178,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: notif-svc
+      target: dev
     container_name: notif-svc
+    working_dir: /usr/src/app/microservices/notif-svc
     profiles:
       - notif
     ports:
@@ -187,9 +189,9 @@ services:
       MONGODB_URI: mongodb://${NOTIF_MONGO_USERNAME}:${NOTIF_MONGO_PASSWORD}@notif-mongo:27017/notif_svc?authSource=admin
       PORT: 3004
       INTERNAL_SECRET: ${INTERNAL_SECRET}
-      USER_SVC_URL: http://user-svc:3002
+      USER_SVC_URL: ${USER_SVC_URL}
     volumes:
-      - ./microservices/notif-svc/src:/prod/notif-svc/src
+      - ./microservices/notif-svc/src:/usr/src/app/microservices/notif-svc/src
     command: pnpm dev
     depends_on:
       notif-mongo:
@@ -204,8 +206,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: feed-svc
+      target: dev
     container_name: feed-svc
+    working_dir: /usr/src/app/microservices/feed-svc
     profiles:
       - feed
     ports:
@@ -213,10 +216,10 @@ services:
     environment:
       PORT: 3005
       INTERNAL_SECRET: ${INTERNAL_SECRET}
-      USER_SVC_URL: http://user-svc:3002
-      POST_SVC_URL: http://post-svc:3003
+      USER_SVC_URL: ${USER_SVC_URL}
+      POST_SVC_URL: ${POST_SVC_URL}
     volumes:
-      - ./microservices/feed-svc/src:/prod/feed-svc/src
+      - ./microservices/feed-svc/src:/usr/src/app/microservices/feed-svc/src
     command: pnpm dev
     networks:
       - backend
@@ -228,17 +231,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: frontend
+      target: dev
     container_name: frontend
+    working_dir: /usr/src/app/front
     profiles:
       - front
     ports:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NGINX_URL: ${NGINX_URL}
     volumes:
-      - ./front/src:/prod/frontend/src
-      - ./front/public:/prod/frontend/public
+      - ./front/src:/usr/src/app/front/src
+      - ./front/public:/usr/src/app/front/public
     command: pnpm dev
     networks:
       - frontend
@@ -253,6 +258,7 @@ services:
       - "80:80"
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - uploads:/uploads:ro
     networks:
       - backend
       - frontend
@@ -268,3 +274,5 @@ volumes:
   user-svc-db:
   post-svc-db:
   notif-svc-db:
+  # Fichiers uploadés (avatars, bannières) : écrits par user-svc, servis par Nginx
+  uploads:
