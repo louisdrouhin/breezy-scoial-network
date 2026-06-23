@@ -74,7 +74,7 @@ export default function Login() {
       >
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Image src="/Breezy-Logo.svg" alt="Breezy Logo" width={60} height={60} />
+          <Image src="/Breezy-Logo.svg" alt="Breezy Logo" width={60} height={60} preload style={{ height: 'auto' }} />
         </div>
 
         {/* Title */}

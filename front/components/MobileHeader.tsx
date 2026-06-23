@@ -21,7 +21,7 @@ export default function MobileHeader() {
 
       {/* Logo center */}
       <Link href="/">
-        <Image src="/Breezy-Logo.svg" alt="Logo" width={110} height={110} />
+        <Image src="/Breezy-Logo.svg" alt="Logo" width={110} height={110} style={{ height: "auto" }} />
       </Link>
 
       {/* Empty right for balance */}

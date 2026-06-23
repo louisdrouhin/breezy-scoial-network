@@ -31,7 +31,7 @@ export default function Navbar() {
       style={{ alignItems: "flex-start" }}
     >
       <Link href="/" style={{ paddingLeft: "12px" }}>
-        <Image src="/Breezy-Logo.svg" alt="Logo" width={300} height={300} />
+        <Image src="/Breezy-Logo.svg" alt="Logo" width={300} height={300} style={{ height: "auto" }} />
       </Link>
 
       <Link
