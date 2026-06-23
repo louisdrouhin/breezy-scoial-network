@@ -95,24 +95,25 @@ Règles strictes à respecter dans tout code généré :
 
 ---
 
-## 3. Schémas de données (Prisma)
+## 3. Schémas de données (Sequelize / Mongoose)
 
-| Service     | Moteur     | Raison du choix                                                 |
-| ----------- | ---------- | --------------------------------------------------------------- |
-| `auth-svc`  | PostgreSQL | données critiques, contraintes fortes, transactions ACID        |
-| `user-svc`  | PostgreSQL | le graphe de follow est un many-to-many relationnel classique   |
-| `post-svc`  | MongoDB    | volume d'écriture élevé, structure semi-flexible                |
-| `notif-svc` | MongoDB    | fort volume d'écriture, payload variable selon le type de notif |
-| `feed-svc`  | — (aucune) | calculé à la volée, voir section 2                              |
+| Service     | Moteur     | ORM/ODM    | Raison du choix                                                 |
+| ----------- | ---------- | ---------- | --------------------------------------------------------------- |
+| `auth-svc`  | PostgreSQL | Sequelize  | données critiques, contraintes fortes, transactions ACID        |
+| `user-svc`  | PostgreSQL | Sequelize  | le graphe de follow est un many-to-many relationnel classique   |
+| `post-svc`  | MongoDB    | Mongoose   | volume d'écriture élevé, structure semi-flexible                |
+| `notif-svc` | MongoDB    | Mongoose   | fort volume d'écriture, payload variable selon le type de notif |
+| `feed-svc`  | — (aucune) | —          | calculé à la volée, voir section 2                              |
 
 Modèle important à respecter : **dans `post-svc`, un commentaire EST un
 post**, simplement doté d'un `parentId` pointant vers un autre `Post`. Ne
 pas recréer une entité `Comment` séparée — ça casse le modèle de thread à
 profondeur illimitée qu'on a choisi.
 
-Chaque service avec base de données a son `schema.prisma` dans
-`microservices/<service>/prisma/`. `feed-svc` n'a pas de dossier
-`prisma/` puisqu'il n'a pas de base. Avant de modifier un schéma,
+Chaque service avec base de données définit ses modèles dans
+`microservices/<service>/src/models/` (modèles Sequelize pour les services
+PostgreSQL, schémas Mongoose pour les services MongoDB). `feed-svc` n'a pas
+de dossier `models/` puisqu'il n'a pas de base. Avant de modifier un modèle,
 vérifier l'historique des décisions déjà prises (champs volontairement
 retirés du scope : médias riches, modération/signalement, préférences
 de langue/thème, état de révocation de token — voir section 6 pour le
@@ -148,7 +149,7 @@ Exemples :
 feat(auth-svc): ajoute la route de login avec génération JWT
 fix(post-svc): corrige le calcul de replyCount sur les threads imbriqués
 docs(readme): met à jour les instructions d'installation
-chore(deps): bump prisma vers la dernière version
+chore(deps): bump sequelize vers la dernière version
 ```
 
 **Toute instance Claude qui commit pour le compte d'un humain doit
@@ -176,22 +177,20 @@ propre `CLAUDE.md`.
 <service>/
 ├── Dockerfile
 ├── .env                 (jamais commité, voir .gitignore)
-├── prisma/
-│   └── schema.prisma
 ├── package.json
 ├── tsconfig.json
 └── src/
     ├── controllers/
     ├── routes/
     ├── services/
-    ├── models/
+    ├── models/          (modèles Sequelize ou schémas Mongoose)
     ├── middlewares/
     ├── config/
     ├── seed/
     └── index.js
 ```
 
-`feed-svc` suit la même arborescence **sans le dossier `prisma/`** —
+`feed-svc` suit la même arborescence **sans le dossier `models/`** —
 il n'a aucune base de données, son `seed/` (s'il existe) sert au plus à
 peupler des données de test côté `post-svc`/`user-svc` pour les démos,
 pas à initialiser une base qui lui serait propre.
@@ -265,12 +264,11 @@ explicitement :
   - Préférences de langue et de thème sur le profil
   - Suspension/bannissement avancé (le champ `active` sur `Account`
     suffit pour bloquer un compte)
-- **Isolation du client Prisma en monorepo pnpm** : on utilise un
-  `.npmrc` racine avec `public-hoist-pattern[]=!@prisma/client` et
-  `public-hoist-pattern[]=!.prisma/client` plutôt qu'un `output` custom
-  dans chaque schéma. Ne pas réintroduire de `output` custom sans
-  retirer cette règle du `.npmrc` (les deux approches ne doivent pas
-  coexister).
+- **ORM/ODM : Sequelize pour les services PostgreSQL (`auth-svc`,
+  `user-svc`), Mongoose pour les services MongoDB (`post-svc`,
+  `notif-svc`).** Pas de Prisma dans ce projet. Modèles définis dans
+  `src/models/` de chaque service. Ne pas réintroduire Prisma sans
+  discussion (impact sur tous les services, les Dockerfiles et le build).
 
 ---
 
@@ -315,9 +313,10 @@ pour que les autres services s'alignent.
   diagramme sans qu'on le lui demande, mais ne touche aux fichiers de
   code que si l'utilisateur le formule clairement (ex: "code la route
   X", "corrige ce bug").
-- **Ne jamais modifier le schéma Prisma d'un autre service que celui sur
-  lequel on travaille**, sauf demande explicite — chaque service est
-  "possédé" par un sous-ensemble de l'équipe.
+- **Ne jamais modifier les modèles de données (Sequelize/Mongoose) d'un
+  autre service que celui sur lequel on travaille**, sauf demande
+  explicite — chaque service est "possédé" par un sous-ensemble de
+  l'équipe.
 - Si une fonctionnalité semble manquante par rapport à un réseau social
   "complet", vérifier d'abord la section 6 (hors scope volontaire) avant
   de proposer de l'ajouter.
