@@ -72,6 +72,7 @@ export interface Post {
   likeCount: number;
   replyCount: number;
   edited: boolean;
+  deleted: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +84,7 @@ export interface Profile {
   avatarUrl: string | null;
   bannerUrl: string | null;
   notifLikes: boolean;
+  notifMentions: boolean;
   notifFollows: boolean;
   createdAt: string;
   updatedAt: string;
@@ -282,7 +284,7 @@ export const postAPI = {
   },
 
   getByTag: async (tag: string, page = 1, limit = 20): Promise<Post[]> => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/tags/${tag}?page=${page}&limit=${limit}`);
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/tags/${encodeURIComponent(tag)}?page=${page}&limit=${limit}`);
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to fetch posts') }
     return res.json();
   },
@@ -348,7 +350,7 @@ export const userAPI = {
     return res.json();
   },
 
-  updateMe: async (data: { displayName?: string | null; bio?: string | null; notifLikes?: boolean; notifFollows?: boolean }): Promise<Profile> => {
+  updateMe: async (data: { displayName?: string | null; bio?: string | null; notifLikes?: boolean; notifMentions?: boolean; notifFollows?: boolean }): Promise<Profile> => {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/users/me`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

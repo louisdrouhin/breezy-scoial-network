@@ -1,6 +1,6 @@
 import Post from '../models/post.model.js'
 import Like from '../models/like.model.js'
-import { notifyLike, notifyComment, notifyMentions } from '../services/notif.service.js'
+import { extractMentionUsernames, notifyLike, notifyComment, notifyMentions } from '../services/notif.service.js'
 
 const OBJECT_ID_RE = /^[0-9a-f]{24}$/i
 
@@ -25,6 +25,8 @@ const sanitizeMedia = (media) => {
 }
 
 const isObjectId = (id) => typeof id === 'string' && OBJECT_ID_RE.test(id)
+
+const extractTags = (content) => [...new Set((content.match(/#(\w+)/g) ?? []).map(t => t.slice(1).toLowerCase()))]
 
 const getGifUrl = (gif, ...paths) => {
   for (const path of paths) {
@@ -73,7 +75,7 @@ export const createPost = async (req, res) => {
   const authorUsername = req.get('x-user-username')
   if (!authorUsername) return res.status(401).json({ message: 'Non authentifié' })
 
-  const { content, tags, parentId, media } = req.body
+  const { content, parentId, media } = req.body
   const cleanContent = typeof content === 'string' ? content.trim() : ''
   const sanitized = sanitizeMedia(media)
   if (sanitized.error) return res.status(400).json({ message: sanitized.error })
@@ -99,7 +101,7 @@ export const createPost = async (req, res) => {
     authorUsername,
     content: cleanContent,
     media: cleanMedia,
-    tags: tags ?? [],
+    tags: extractTags(cleanContent),
     parent: parentId ?? null,
   })
 
@@ -209,7 +211,7 @@ export const getPostsByUser = async (req, res) => {
 
   // type=posts -> uniquement les posts racines ; type=replies -> uniquement les
   // commentaires (post avec parent) ; absent -> tout (compat ascendante).
-  const filter = { authorUsername: req.params.username }
+  const filter = { authorUsername: req.params.username, deleted: { $ne: true } }
   if (req.query.type === 'posts') filter.parent = null
   else if (req.query.type === 'replies') filter.parent = { $ne: null }
 
@@ -235,6 +237,7 @@ export const updatePost = async (req, res) => {
 
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
+  if (post.deleted) return res.status(410).json({ message: 'Post supprimé' })
   if (post.authorUsername !== username) return res.status(403).json({ message: 'Interdit' })
 
   const cleanMedia = sanitized.media === undefined ? post.media : sanitized.media
@@ -242,12 +245,15 @@ export const updatePost = async (req, res) => {
     return res.status(400).json({ message: 'Le contenu ou un média est requis' })
   }
 
-  const tags = [...new Set((cleanContent.match(/#(\w+)/g) ?? []).map(t => t.slice(1)))]
+  const previousMentions = extractMentionUsernames(post.content)
+  const tags = extractTags(cleanContent)
   const updated = await Post.findByIdAndUpdate(
     req.params.id,
     { content: cleanContent, media: cleanMedia, tags, edited: true },
     { new: true }
   )
+
+  notifyMentions(cleanContent, username, req.params.id, previousMentions)
 
   return res.json({ post: updated })
 }
@@ -260,16 +266,20 @@ export const deletePost = async (req, res) => {
 
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
+  if (post.deleted) return res.status(204).send()
 
   if (post.authorUsername !== username && role !== 'admin' && role !== 'mod') {
     return res.status(403).json({ message: 'Interdit' })
   }
 
-  if (post.parent) {
-    await Post.findByIdAndUpdate(post.parent, { $inc: { replyCount: -1 } })
-  }
-
-  await Post.findByIdAndDelete(req.params.id)
+  await Post.findByIdAndUpdate(req.params.id, {
+    content: '',
+    media: [],
+    tags: [],
+    likeCount: 0,
+    deleted: true,
+    edited: true,
+  })
   await Like.deleteMany({ post: req.params.id })
 
   return res.status(204).send()
@@ -279,6 +289,8 @@ export const getLikeStatus = async (req, res) => {
   const username = req.get('x-user-username')
   if (!username) return res.status(401).json({ message: 'Non authentifié' })
   if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
+  const post = await Post.findById(req.params.id)
+  if (!post || post.deleted) return res.json({ liked: false })
   const existing = await Like.findOne({ username, post: req.params.id })
   return res.json({ liked: !!existing })
 }
@@ -290,6 +302,7 @@ export const likePost = async (req, res) => {
 
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
+  if (post.deleted) return res.status(410).json({ message: 'Post supprimé' })
 
   const existing = await Like.findOne({ username, post: req.params.id })
   if (existing) return res.status(409).json({ message: 'Déjà liké' })
@@ -313,6 +326,7 @@ export const unlikePost = async (req, res) => {
 
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
+  if (post.deleted) return res.status(410).json({ message: 'Post supprimé' })
 
   const like = await Like.findOneAndDelete({ username, post: req.params.id })
   if (!like) return res.status(404).json({ message: 'Like introuvable' })
@@ -331,7 +345,7 @@ export const getPostsByTag = async (req, res) => {
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20))
   const skip = (page - 1) * limit
 
-  const posts = await Post.find({ tags: req.params.tag })
+  const posts = await Post.find({ tags: req.params.tag.toLowerCase(), deleted: { $ne: true } })
     .sort({ created_at: -1 })
     .skip(skip)
     .limit(limit)
@@ -350,7 +364,7 @@ export const getPostsByAuthors = async (req, res) => {
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20))
   const skip = (page - 1) * limit
 
-  const posts = await Post.find({ authorUsername: { $in: usernames }, parent: null })
+  const posts = await Post.find({ authorUsername: { $in: usernames }, parent: null, deleted: { $ne: true } })
     .sort({ created_at: -1 })
     .skip(skip)
     .limit(limit)

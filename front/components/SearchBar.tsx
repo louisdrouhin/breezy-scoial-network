@@ -18,6 +18,9 @@ export default function SearchBar() {
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trimmedQuery = query.trim();
+  const tagQuery = trimmedQuery.startsWith('#') ? trimmedQuery.slice(1).trim() : '';
+  const isTagSearch = tagQuery.length > 0;
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -26,6 +29,13 @@ export default function SearchBar() {
     if (q.length < 2) {
       setResults([]);
       setIsOpen(false);
+      return;
+    }
+
+    if (q.startsWith('#')) {
+      setResults([]);
+      setIsOpen(q.slice(1).trim().length > 0);
+      setIsLoading(false);
       return;
     }
 
@@ -66,7 +76,7 @@ export default function SearchBar() {
         style={{
           backgroundColor: '#ffffff',
           border: '2px solid #1A4731',
-          borderRadius: isOpen && results.length > 0 ? '8px 8px 0 0' : '8px',
+          borderRadius: isOpen && (results.length > 0 || isTagSearch) ? '8px 8px 0 0' : '8px',
           padding: '12px',
           display: 'flex',
           alignItems: 'center',
@@ -78,7 +88,7 @@ export default function SearchBar() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for a user..."
+          placeholder="Search for a user or #tag..."
           style={{
             flex: 1,
             border: 'none',
@@ -94,7 +104,43 @@ export default function SearchBar() {
         )}
       </div>
 
-      {isOpen && results.length > 0 && (
+      {isOpen && isTagSearch && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            backgroundColor: '#ffffff',
+            border: '2px solid #1A4731',
+            borderTop: 'none',
+            borderRadius: '0 0 8px 8px',
+            zIndex: 100,
+          }}
+        >
+          <Link
+            href={`/search?tag=${encodeURIComponent(tagQuery)}`}
+            onClick={handleSelect}
+            style={{ textDecoration: 'none' }}
+          >
+            <div
+              style={{
+                padding: '12px 14px',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-alata)',
+                color: '#1A4731',
+                fontSize: '13px',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f0f7f3')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              Search #{tagQuery}
+            </div>
+          </Link>
+        </div>
+      )}
+
+      {isOpen && !isTagSearch && results.length > 0 && (
         <div
           style={{
             position: 'absolute',
@@ -147,7 +193,7 @@ export default function SearchBar() {
         </div>
       )}
 
-      {isOpen && !isLoading && results.length === 0 && query.trim().length >= 2 && (
+      {isOpen && !isTagSearch && !isLoading && results.length === 0 && query.trim().length >= 2 && (
         <div
           style={{
             position: 'absolute',

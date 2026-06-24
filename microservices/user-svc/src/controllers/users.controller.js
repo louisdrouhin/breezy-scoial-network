@@ -94,10 +94,14 @@ export const getNotifPrefs = async (req, res) => {
   const { username } = req.params;
   const profile = await Profile.findOne({
     where: { username },
-    attributes: ['notifLikes', 'notifFollows'],
+    attributes: ['notifLikes', 'notifMentions', 'notifFollows'],
   });
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
-  res.json({ notifLikes: profile.notifLikes ?? true, notifFollows: profile.notifFollows ?? true });
+  res.json({
+    notifLikes: profile.notifLikes ?? true,
+    notifMentions: profile.notifMentions ?? true,
+    notifFollows: profile.notifFollows ?? true,
+  });
 };
 
 export const createProfile = async (req, res) => {

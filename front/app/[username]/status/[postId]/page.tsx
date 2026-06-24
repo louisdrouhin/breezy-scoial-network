@@ -7,6 +7,7 @@ import SearchBar from '@/components/SearchBar';
 import Subscriptions from '@/components/Subscriptions';
 import PostBar from '@/components/PostBar';
 import Post from '@/components/Post';
+import RichPostText from '@/components/RichPostText';
 import { ChevronLeft } from 'lucide-react';
 import { postAPI, Post as PostType } from '@/lib/api';
 import { useProfileCache } from '@/hooks/useProfileCache';
@@ -80,8 +81,11 @@ export default function StatusPage({ params }: StatusPageProps) {
   };
 
   const handleReplyDeleted = (deletedId: string) => {
-    setReplies(prev => prev.filter(r => r._id !== deletedId));
-    if (post) setPost({ ...post, replyCount: Math.max(0, post.replyCount - 1) });
+    setReplies(prev => prev.map(reply => (
+      reply._id === deletedId
+        ? { ...reply, content: '', media: [], tags: [], likeCount: 0, deleted: true, edited: true }
+        : reply
+    )));
   };
 
   if (isLoading) {
@@ -114,10 +118,9 @@ export default function StatusPage({ params }: StatusPageProps) {
           {ancestors.length > 0 && (
             <div style={{ marginBottom: '8px' }}>
               {ancestors.map(ancestor => (
-                <Link
+                <div
                   key={ancestor._id}
-                  href={`/${ancestor.authorUsername}/status/${ancestor._id}`}
-                  style={{ textDecoration: 'none', display: 'block' }}
+                  style={{ display: 'block' }}
                 >
                   <div style={{ backgroundColor: '#ffffff', border: '1px solid #E0E0E0', borderRadius: '8px', padding: '14px 16px', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', gap: '10px' }}>
@@ -130,12 +133,21 @@ export default function StatusPage({ params }: StatusPageProps) {
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '2px' }}>
                           <span style={{ fontFamily: 'var(--font-rubik)', fontSize: '13px', fontWeight: 'bold', color: '#1A4731' }}>{ancestor.authorUsername}</span>
                           <span style={{ fontFamily: 'var(--font-alata)', fontSize: '12px', color: '#999' }}>· {formatTime(ancestor.created_at)}</span>
+                          <Link href={`/${ancestor.authorUsername}/status/${ancestor._id}`} style={{ fontFamily: 'var(--font-alata)', fontSize: '12px', color: '#1A4731', textDecoration: 'none' }}>
+                            · View
+                          </Link>
                         </div>
-                        <p style={{ fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#555', margin: 0, lineHeight: '1.4', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ancestor.content}</p>
+                        {ancestor.deleted ? (
+                          <p style={{ fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#777', margin: 0, lineHeight: '1.4', fontStyle: 'italic' }}>
+                            Breeze supprimé
+                          </p>
+                        ) : (
+                          <RichPostText text={ancestor.content} style={{ fontSize: '13px', color: '#555', margin: 0, lineHeight: '1.4' }} />
+                        )}
                       </div>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
@@ -152,6 +164,7 @@ export default function StatusPage({ params }: StatusPageProps) {
             initialLikes={post.likeCount}
             initialComments={post.replyCount}
             edited={post.edited}
+            deleted={post.deleted}
             initialIsLiked={likedPosts.has(post._id)}
             onDeleted={() => router.push('/')}
           />
@@ -178,6 +191,7 @@ export default function StatusPage({ params }: StatusPageProps) {
                   initialLikes={reply.likeCount}
                   initialComments={reply.replyCount}
                   edited={reply.edited}
+                  deleted={reply.deleted}
                   initialIsLiked={likedPosts.has(reply._id)}
                   onDeleted={handleReplyDeleted}
                 />

@@ -7,6 +7,7 @@ import { postAPI, MediaItem } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import ConfirmModal from '@/components/ConfirmModal';
 import GifPickerModal from '@/components/GifPickerModal';
+import RichPostText from '@/components/RichPostText';
 import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE, mediaItemFromUrl } from '@/lib/media';
 
 interface PostProps {
@@ -20,6 +21,7 @@ interface PostProps {
   initialLikes?: number;
   initialComments?: number;
   edited?: boolean;
+  deleted?: boolean;
   initialIsLiked?: boolean;
   onDeleted?: (id: string) => void;
 }
@@ -35,11 +37,13 @@ export default function Post({
   initialLikes = 0,
   initialComments = 0,
   edited = false,
+  deleted = false,
   initialIsLiked = false,
   onDeleted,
 }: PostProps) {
   const { user } = useAuth();
-  const isOwner = user?.username === username;
+  const [currentDeleted, setCurrentDeleted] = useState(deleted);
+  const isOwner = user?.username === username && !currentDeleted;
 
   const [likes, setLikes] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(initialIsLiked);
@@ -84,7 +88,7 @@ export default function Post({
   }, []);
 
   const handleLike = async () => {
-    if (likeLoading) return;
+    if (likeLoading || currentDeleted) return;
     setLikeLoading(true);
     try {
       if (isLiked) {
@@ -238,6 +242,13 @@ export default function Post({
     setDeleteLoading(true);
     try {
       await postAPI.delete(id);
+      setCurrentDeleted(true);
+      setCurrentContent('');
+      setCurrentMedia([]);
+      setLikes(0);
+      setIsLiked(false);
+      setShowDeleteModal(false);
+      setDeleteLoading(false);
       onDeleted?.(id); // le parent retire le post de la liste
     } catch {
       setDeleteLoading(false); // on ne reset qu'en cas d'échec (sinon démonté)
@@ -268,7 +279,7 @@ export default function Post({
       {showDeleteModal && (
         <ConfirmModal
           title="Delete post"
-          message="This post will be permanently deleted. This action cannot be undone."
+          message="This will remove the post content while keeping the thread structure."
           confirmLabel="Delete"
           danger
           loading={deleteLoading}
@@ -307,7 +318,7 @@ export default function Post({
                 @{username}
               </p>
             </Link>
-            {isEdited && (
+            {isEdited && !currentDeleted && (
               <span style={{ fontFamily: 'var(--font-alata)', color: '#999', fontSize: '11px' }}>· edited</span>
             )}
           </div>
@@ -338,7 +349,11 @@ export default function Post({
       </div>
 
       {/* Post content */}
-      {isEditing ? (
+      {currentDeleted ? (
+        <p style={{ fontFamily: 'var(--font-alata)', color: '#777', marginBottom: '16px', lineHeight: '1.5', fontStyle: 'italic' }}>
+          Breeze supprimé
+        </p>
+      ) : isEditing ? (
         <div style={{ marginBottom: '16px' }}>
           <textarea
             value={editText}
@@ -433,15 +448,11 @@ export default function Post({
           </div>
         </div>
       ) : (
-        <Link href={`/${username}/status/${id}`} style={{ textDecoration: 'none' }}>
-          <p style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', marginBottom: '16px', lineHeight: '1.5', cursor: 'pointer', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-            {currentContent}
-          </p>
-        </Link>
+        currentContent ? <RichPostText text={currentContent} /> : null
       )}
 
       {/* Médias (images / GIF) */}
-      {!isEditing && currentMedia.length > 0 && (
+      {!currentDeleted && !isEditing && currentMedia.length > 0 && (
         <div style={{ marginBottom: '16px' }}>
           {currentMedia.map((m, i) => (
             <img
@@ -473,16 +484,16 @@ export default function Post({
       >
         <button
           onClick={handleLike}
-          disabled={likeLoading}
+          disabled={likeLoading || currentDeleted}
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
             backgroundColor: 'transparent',
             border: 'none',
-            cursor: likeLoading ? 'default' : 'pointer',
+            cursor: likeLoading || currentDeleted ? 'default' : 'pointer',
             padding: 0,
-            opacity: likeLoading ? 0.6 : 1,
+            opacity: likeLoading || currentDeleted ? 0.6 : 1,
           }}
         >
           <Heart

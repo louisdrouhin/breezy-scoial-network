@@ -111,6 +111,7 @@ export default function Notifications() {
               key={notif._id}
               id={notif._id}
               type={notif.type}
+              recipientUsername={notif.recipientUsername}
               actorUsername={notif.actorUsername}
               relatedPostId={notif.relatedPostId}
               read={notif.read}

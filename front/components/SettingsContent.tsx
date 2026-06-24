@@ -57,6 +57,7 @@ export default function SettingsContent() {
   const [pwdError, setPwdError] = useState('');
 
   const [notifLikes, setNotifLikes] = useState(true);
+  const [notifMentions, setNotifMentions] = useState(true);
   const [notifFollows, setNotifFollows] = useState(true);
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function SettingsContent() {
         setDisplayName(p.displayName ?? '');
         setBio(p.bio ?? '');
         setNotifLikes(p.notifLikes ?? true);
+        setNotifMentions(p.notifMentions ?? true);
         setNotifFollows(p.notifFollows ?? true);
       })
       .catch(() => {})
@@ -121,7 +123,7 @@ export default function SettingsContent() {
     setIsSaving(true);
     setSaveStatus('idle');
     try {
-      await userAPI.updateMe({ displayName: displayName || null, bio: bio || null, notifLikes, notifFollows });
+      await userAPI.updateMe({ displayName: displayName || null, bio: bio || null, notifLikes, notifMentions, notifFollows });
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch {
@@ -229,6 +231,14 @@ export default function SettingsContent() {
             <p style={{ fontFamily: 'var(--font-alata)', color: '#999', margin: 0, fontSize: '12px' }}>Get notified when someone likes your post</p>
           </div>
           <Toggle checked={notifLikes} onChange={setNotifLikes} />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #F4F5F4' }}>
+          <div>
+            <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 4px 0', fontSize: '14px' }}>Mentions</p>
+            <p style={{ fontFamily: 'var(--font-alata)', color: '#999', margin: 0, fontSize: '12px' }}>Get notified when someone mentions you</p>
+          </div>
+          <Toggle checked={notifMentions} onChange={setNotifMentions} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

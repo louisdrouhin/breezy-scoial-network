@@ -10,6 +10,7 @@ const Profile = sequelize.define(
     avatarUrl: { type: DataTypes.STRING, field: "avatar_url" },
     bannerUrl: { type: DataTypes.STRING, field: "banner_url" },
     notifLikes: { type: DataTypes.BOOLEAN, field: "notif_likes", defaultValue: true },
+    notifMentions: { type: DataTypes.BOOLEAN, field: "notif_mentions", defaultValue: true },
     notifFollows: { type: DataTypes.BOOLEAN, field: "notif_follows", defaultValue: true },
   },
   {

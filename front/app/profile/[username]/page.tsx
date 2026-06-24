@@ -229,6 +229,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 initialLikes={post.likeCount}
                 initialComments={post.replyCount}
                 edited={post.edited}
+                deleted={post.deleted}
                 initialIsLiked={likedPostIds.has(post._id)}
                 onDeleted={(deletedId) => setPosts(prev => prev.filter(p => p._id !== deletedId))}
               />
