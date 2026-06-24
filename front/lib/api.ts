@@ -247,11 +247,11 @@ export const postAPI = {
     return res.json();
   },
 
-  update: async (id: string, content: string): Promise<Post> => {
+  update: async (id: string, content: string, media?: MediaItem[]): Promise<Post> => {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify(media === undefined ? { content } : { content, media }),
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to update post') }
     const data = await res.json();

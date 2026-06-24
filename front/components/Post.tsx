@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Heart, MessageCircle, Share2, Pencil, Trash2 } from 'lucide-react';
+import { Film, Heart, ImagePlus, Link2, MessageCircle, Pencil, Share2, Trash2, X } from 'lucide-react';
 import { postAPI, MediaItem } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import ConfirmModal from '@/components/ConfirmModal';
+import GifPickerModal from '@/components/GifPickerModal';
+import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE, mediaItemFromUrl } from '@/lib/media';
 
 interface PostProps {
   id?: string;
@@ -48,10 +50,20 @@ export default function Post({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(content);
   const [currentContent, setCurrentContent] = useState(content);
+  const [currentMedia, setCurrentMedia] = useState<MediaItem[]>(media);
   const [isEdited, setIsEdited] = useState(edited);
   const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editMediaFile, setEditMediaFile] = useState<File | null>(null);
+  const [editRemoteMedia, setEditRemoteMedia] = useState<MediaItem | null>(media[0] ?? null);
+  const [editMediaPreview, setEditMediaPreview] = useState<string | null>(media[0]?.url ?? null);
+  const [editMediaUrl, setEditMediaUrl] = useState('');
+  const [isEditMediaUrlOpen, setIsEditMediaUrlOpen] = useState(false);
+  const [isEditGifPickerOpen, setIsEditGifPickerOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const editObjectUrlRef = useRef<string | null>(null);
 
   // Le statut « liké » est récupéré côté page de façon asynchrone, après le
   // premier rendu : useState ne prend sa valeur initiale qu'au montage, donc on
@@ -59,6 +71,17 @@ export default function Post({
   useEffect(() => {
     setIsLiked(initialIsLiked);
   }, [initialIsLiked]);
+
+  const revokeEditObjectUrl = () => {
+    if (editObjectUrlRef.current) {
+      URL.revokeObjectURL(editObjectUrlRef.current);
+      editObjectUrlRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return revokeEditObjectUrl;
+  }, []);
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -94,20 +117,117 @@ export default function Post({
     return date.toLocaleDateString();
   };
 
+  const beginEdit = () => {
+    revokeEditObjectUrl();
+    const existingMedia = currentMedia[0] ?? null;
+    setEditText(currentContent);
+    setEditMediaFile(null);
+    setEditRemoteMedia(existingMedia);
+    setEditMediaPreview(existingMedia?.url ?? null);
+    setEditMediaUrl('');
+    setEditError(null);
+    setIsEditMediaUrlOpen(false);
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    revokeEditObjectUrl();
+    setEditText(currentContent);
+    setEditMediaFile(null);
+    setEditRemoteMedia(currentMedia[0] ?? null);
+    setEditMediaPreview(null);
+    setEditMediaUrl('');
+    setEditError(null);
+    setIsEditMediaUrlOpen(false);
+    setIsEditGifPickerOpen(false);
+    setIsEditing(false);
+  };
+
+  const clearEditMedia = () => {
+    revokeEditObjectUrl();
+    setEditMediaFile(null);
+    setEditRemoteMedia(null);
+    setEditMediaPreview(null);
+    setEditMediaUrl('');
+    setIsEditMediaUrlOpen(false);
+  };
+
+  const handleEditFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
+      setEditError('Format non supporté (jpeg, png, webp, gif uniquement)');
+      return;
+    }
+    if (file.size > MAX_MEDIA_SIZE) {
+      setEditError('Fichier trop volumineux (10 Mo max)');
+      return;
+    }
+
+    revokeEditObjectUrl();
+    const previewUrl = URL.createObjectURL(file);
+    editObjectUrlRef.current = previewUrl;
+    setEditError(null);
+    setEditMediaFile(file);
+    setEditRemoteMedia(null);
+    setEditMediaPreview(previewUrl);
+    setIsEditMediaUrlOpen(false);
+  };
+
+  const handleEditGifSelect = (gif: { url: string; preview: string }) => {
+    revokeEditObjectUrl();
+    setEditError(null);
+    setEditMediaFile(null);
+    setEditRemoteMedia({ url: gif.url, type: 'gif' });
+    setEditMediaPreview(gif.preview);
+    setIsEditMediaUrlOpen(false);
+    setIsEditGifPickerOpen(false);
+  };
+
+  const handleEditMediaUrlChange = (value: string) => {
+    const media = mediaItemFromUrl(value);
+    revokeEditObjectUrl();
+    setEditError(null);
+    setEditMediaFile(null);
+    setEditMediaUrl(value);
+    setEditRemoteMedia(media);
+    setEditMediaPreview(media?.url ?? null);
+  };
+
+  const mediaEquals = (a: MediaItem[], b: MediaItem[]) => {
+    return a.length === b.length && a.every((item, index) => item.url === b[index]?.url && item.type === b[index]?.type);
+  };
+
   const handleEditSave = async () => {
-    if (editLoading || !editText.trim() || editText.trim() === currentContent) {
+    const nextMediaBeforeUpload = editRemoteMedia ? [editRemoteMedia] : [];
+    if (editLoading || (!editText.trim() && !editMediaFile && nextMediaBeforeUpload.length === 0)) {
+      setEditError('Le contenu ou un média est requis');
+      return;
+    }
+    if (!editMediaFile && editText.trim() === currentContent && mediaEquals(nextMediaBeforeUpload, currentMedia)) {
       setIsEditing(false);
       return;
     }
+
     setEditLoading(true);
+    setEditError(null);
     try {
-      const updated = await postAPI.update(id, editText.trim());
+      const nextMedia = editMediaFile
+        ? [await postAPI.uploadMedia(editMediaFile)]
+        : nextMediaBeforeUpload;
+      const updated = await postAPI.update(id, editText.trim(), nextMedia);
       setCurrentContent(updated.content);
       setEditText(updated.content);
+      setCurrentMedia(updated.media ?? []);
+      setEditRemoteMedia(updated.media?.[0] ?? null);
+      setEditMediaPreview(null);
+      setEditMediaFile(null);
+      revokeEditObjectUrl();
       setIsEdited(true);
       setIsEditing(false);
-    } catch {
-      // silently ignore
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : 'Failed to update post');
     } finally {
       setEditLoading(false);
     }
@@ -131,6 +251,9 @@ export default function Post({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const hasEditMedia = editMediaFile !== null || editRemoteMedia !== null;
+  const canSaveEdit = (editText.trim() !== '' || hasEditMedia) && !editLoading;
 
   return (
     <div
@@ -195,7 +318,7 @@ export default function Post({
         {isOwner && !isEditing && (
           <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={beginEdit}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
               title="Edit"
             >
@@ -223,17 +346,87 @@ export default function Post({
             style={{ width: '100%', padding: '8px', border: '1px solid #1A4731', borderRadius: '4px', fontFamily: 'var(--font-alata)', fontSize: '14px', resize: 'none', minHeight: '60px', boxSizing: 'border-box', outline: 'none' }}
             autoFocus
           />
+
+          {editMediaPreview && (
+            <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
+              <img
+                src={editMediaPreview}
+                alt=""
+                style={{ maxWidth: '100%', maxHeight: '240px', borderRadius: '8px', border: '1px solid #1A4731', display: 'block' }}
+              />
+              <button
+                onClick={clearEditMedia}
+                title="Retirer"
+                style={{ position: 'absolute', top: '8px', right: '8px', width: '28px', height: '28px', borderRadius: '50%', border: 'none', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
+          {isEditMediaUrlOpen && editMediaFile === null && (
+            <div style={{ marginTop: '10px' }}>
+              <input
+                value={editMediaUrl}
+                onChange={e => handleEditMediaUrlChange(e.target.value)}
+                placeholder="Coller un lien média"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #1A4731', borderRadius: '6px', fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#1A4731', outline: 'none' }}
+              />
+            </div>
+          )}
+
+          {editError && (
+            <div style={{ color: '#dc2626', fontFamily: 'var(--font-alata)', fontSize: '13px', marginTop: '8px' }}>
+              {editError}
+            </div>
+          )}
+
+          <input
+            ref={editFileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleEditFileSelect}
+            style={{ display: 'none' }}
+          />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+            <button
+              onClick={() => editFileInputRef.current?.click()}
+              disabled={editLoading || hasEditMedia}
+              title="Ajouter une image ou un GIF"
+              style={{ background: 'none', border: 'none', cursor: editLoading || hasEditMedia ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: editLoading || hasEditMedia ? 0.4 : 1 }}
+            >
+              <ImagePlus size={18} />
+            </button>
+            <button
+              onClick={() => setIsEditMediaUrlOpen(prev => !prev)}
+              disabled={editLoading || hasEditMedia}
+              title="Ajouter un média par URL"
+              style={{ background: 'none', border: 'none', cursor: editLoading || hasEditMedia ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: editLoading || hasEditMedia ? 0.4 : 1 }}
+            >
+              <Link2 size={18} />
+            </button>
+            <button
+              onClick={() => setIsEditGifPickerOpen(true)}
+              disabled={editLoading || hasEditMedia}
+              title="Choisir un GIF Klipy"
+              style={{ background: 'none', border: 'none', cursor: editLoading || hasEditMedia ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: editLoading || hasEditMedia ? 0.4 : 1 }}
+            >
+              <Film size={18} />
+            </button>
+          </div>
+
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'flex-end' }}>
             <button
-              onClick={() => { setIsEditing(false); setEditText(currentContent); }}
+              onClick={cancelEdit}
               style={{ padding: '6px 14px', background: 'none', border: '1px solid #1A4731', borderRadius: '4px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: 'pointer', fontSize: '13px' }}
             >
               Cancel
             </button>
             <button
               onClick={handleEditSave}
-              disabled={editLoading || !editText.trim()}
-              style={{ padding: '6px 14px', backgroundColor: '#1A4731', border: 'none', borderRadius: '4px', fontFamily: 'var(--font-alata)', color: 'white', cursor: editLoading || !editText.trim() ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: editLoading || !editText.trim() ? 0.6 : 1 }}
+              disabled={!canSaveEdit}
+              style={{ padding: '6px 14px', backgroundColor: '#1A4731', border: 'none', borderRadius: '4px', fontFamily: 'var(--font-alata)', color: 'white', cursor: !canSaveEdit ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: !canSaveEdit ? 0.6 : 1 }}
             >
               {editLoading ? '...' : 'Save'}
             </button>
@@ -248,9 +441,9 @@ export default function Post({
       )}
 
       {/* Médias (images / GIF) */}
-      {media.length > 0 && (
+      {!isEditing && currentMedia.length > 0 && (
         <div style={{ marginBottom: '16px' }}>
-          {media.map((m, i) => (
+          {currentMedia.map((m, i) => (
             <img
               key={i}
               src={m.url}
@@ -260,6 +453,13 @@ export default function Post({
             />
           ))}
         </div>
+      )}
+
+      {isEditGifPickerOpen && (
+        <GifPickerModal
+          onSelect={handleEditGifSelect}
+          onClose={() => setIsEditGifPickerOpen(false)}
+        />
       )}
 
       {/* Actions */}

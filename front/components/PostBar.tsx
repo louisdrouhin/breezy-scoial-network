@@ -1,14 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Film, ImagePlus, X } from 'lucide-react';
+import { Film, ImagePlus, Link2, X } from 'lucide-react';
 import { postAPI, Post, MediaItem } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfileCache } from '@/hooks/useProfileCache';
 import GifPickerModal from '@/components/GifPickerModal';
-
-const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_MEDIA_SIZE = 10 * 1024 * 1024; // 10 Mo, aligné sur post-svc
+import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE, mediaItemFromUrl } from '@/lib/media';
 
 interface PostBarProps {
   onPostCreated?: (post?: Post) => void;
@@ -23,6 +21,8 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [remoteMedia, setRemoteMedia] = useState<MediaItem | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [isMediaUrlOpen, setIsMediaUrlOpen] = useState(false);
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,6 +78,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
     setMediaFile(file);
     setRemoteMedia(null);
     setMediaPreview(previewUrl);
+    setIsMediaUrlOpen(false);
   };
 
   const handleGifSelect = (gif: { url: string; preview: string }) => {
@@ -86,7 +87,18 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
     setMediaFile(null);
     setRemoteMedia({ url: gif.url, type: 'gif' });
     setMediaPreview(gif.preview);
+    setIsMediaUrlOpen(false);
     setIsGifPickerOpen(false);
+  };
+
+  const handleMediaUrlChange = (value: string) => {
+    const media = mediaItemFromUrl(value);
+    revokeObjectUrl();
+    setError(null);
+    setMediaFile(null);
+    setMediaUrl(value);
+    setRemoteMedia(media);
+    setMediaPreview(media?.url ?? null);
   };
 
   const clearMedia = () => {
@@ -94,6 +106,8 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
     setMediaFile(null);
     setRemoteMedia(null);
     setMediaPreview(null);
+    setMediaUrl('');
+    setIsMediaUrlOpen(false);
   };
 
   const handleSubmit = async () => {
@@ -192,6 +206,17 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
         </div>
       )}
 
+      {isMediaUrlOpen && mediaFile === null && (
+        <div style={{ marginBottom: '12px' }}>
+          <input
+            value={mediaUrl}
+            onChange={e => handleMediaUrlChange(e.target.value)}
+            placeholder="Coller un lien média"
+            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #1A4731', borderRadius: '6px', fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#1A4731', outline: 'none' }}
+          />
+        </div>
+      )}
+
       {error && (
         <div style={{ color: '#dc2626', fontFamily: 'var(--font-alata)', fontSize: '13px', marginBottom: '8px' }}>
           {error}
@@ -223,6 +248,22 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
             }}
           >
             <ImagePlus size={20} />
+          </button>
+          <button
+            onClick={() => setIsMediaUrlOpen(prev => !prev)}
+            disabled={isLoading || hasMedia}
+            title="Ajouter un média par URL"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: isLoading || hasMedia ? 'not-allowed' : 'pointer',
+              color: '#1A4731',
+              padding: '4px',
+              display: 'flex',
+              opacity: isLoading || hasMedia ? 0.4 : 1,
+            }}
+          >
+            <Link2 size={20} />
           </button>
           <button
             onClick={() => setIsGifPickerOpen(true)}

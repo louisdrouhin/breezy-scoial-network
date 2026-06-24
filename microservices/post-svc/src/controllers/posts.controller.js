@@ -2,19 +2,26 @@ import Post from '../models/post.model.js'
 import Like from '../models/like.model.js'
 import { notifyLike, notifyComment, notifyMentions } from '../services/notif.service.js'
 
-// URLs distantes autorisées pour les médias : uniquement les hôtes Klipy (GIF).
-// Empêche d'injecter une URL arbitraire (SSRF côté affichage / contenu douteux).
-const REMOTE_MEDIA_RE = /^https:\/\/([a-z0-9-]+\.)*klipy\.com\//i
 const OBJECT_ID_RE = /^[0-9a-f]{24}$/i
 
-// Normalise les médias reçus : whitelist des champs, source autorisée (upload
-// local OU GIF Klipy), type contraint, cap à 1.
+const normalizeMediaItem = (item) => {
+  if (!item || typeof item.url !== 'string') return null
+
+  const rawUrl = item.url.trim()
+  if (!rawUrl) return null
+  return { url: rawUrl, type: item.type === 'gif' || rawUrl.toLowerCase().includes('.gif') ? 'gif' : 'image' }
+}
+
+// Normalise les médias reçus : whitelist des champs, type contraint, cap à 1.
+// `undefined` signifie "ne pas modifier" côté update.
 const sanitizeMedia = (media) => {
-  if (!Array.isArray(media)) return []
-  return media
-    .filter(m => m && typeof m.url === 'string' && (m.url.startsWith('/uploads/') || REMOTE_MEDIA_RE.test(m.url)))
-    .slice(0, 1)
-    .map(m => ({ url: m.url, type: REMOTE_MEDIA_RE.test(m.url) || m.type === 'gif' ? 'gif' : 'image' }))
+  if (media === undefined) return { media: undefined, error: null }
+  if (!Array.isArray(media) || media.length === 0) return { media: [], error: null }
+
+  const normalized = normalizeMediaItem(media[0])
+  if (!normalized) return { media: [], error: 'Média invalide' }
+
+  return { media: [normalized], error: null }
 }
 
 const isObjectId = (id) => typeof id === 'string' && OBJECT_ID_RE.test(id)
@@ -68,7 +75,9 @@ export const createPost = async (req, res) => {
 
   const { content, tags, parentId, media } = req.body
   const cleanContent = typeof content === 'string' ? content.trim() : ''
-  const cleanMedia = sanitizeMedia(media)
+  const sanitized = sanitizeMedia(media)
+  if (sanitized.error) return res.status(400).json({ message: sanitized.error })
+  const cleanMedia = sanitized.media ?? []
   // Un post doit avoir au moins du texte OU un média.
   if (!cleanContent && cleanMedia.length === 0) {
     return res.status(400).json({ message: 'Le contenu ou un média est requis' })
@@ -217,18 +226,26 @@ export const updatePost = async (req, res) => {
   if (!username) return res.status(401).json({ message: 'Non authentifié' })
   if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
 
-  const { content } = req.body
-  if (!content || !content.trim()) return res.status(400).json({ message: 'Le contenu est requis' })
-  if (content.length > 280) return res.status(400).json({ message: 'Contenu trop long (280 caractères max)' })
+  const { content, media } = req.body
+  const cleanContent = typeof content === 'string' ? content.trim() : ''
+  if (cleanContent.length > 280) return res.status(400).json({ message: 'Contenu trop long (280 caractères max)' })
+
+  const sanitized = sanitizeMedia(media)
+  if (sanitized.error) return res.status(400).json({ message: sanitized.error })
 
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
   if (post.authorUsername !== username) return res.status(403).json({ message: 'Interdit' })
 
-  const tags = [...new Set((content.match(/#(\w+)/g) ?? []).map(t => t.slice(1)))]
+  const cleanMedia = sanitized.media === undefined ? post.media : sanitized.media
+  if (!cleanContent && (!cleanMedia || cleanMedia.length === 0)) {
+    return res.status(400).json({ message: 'Le contenu ou un média est requis' })
+  }
+
+  const tags = [...new Set((cleanContent.match(/#(\w+)/g) ?? []).map(t => t.slice(1)))]
   const updated = await Post.findByIdAndUpdate(
     req.params.id,
-    { content: content.trim(), tags, edited: true },
+    { content: cleanContent, media: cleanMedia, tags, edited: true },
     { new: true }
   )
 
