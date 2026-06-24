@@ -19,6 +19,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const isOwnProfile = currentUser?.username === username;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<PostType[]>([]);
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -30,6 +31,18 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Récupère le statut « liké » des posts donnés et l'ajoute au set existant.
+  const hydrateLikes = useCallback(async (list: PostType[]) => {
+    const results = await Promise.allSettled(list.map(p => postAPI.getLikeStatus(p._id)));
+    setLikedPostIds(prev => {
+      const next = new Set(prev);
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled' && r.value.liked) next.add(list[i]._id);
+      });
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -48,6 +61,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         const [profileData, postsData, followers, following, myFollowing] = results as [Profile, PostType[], FollowerEntry[], FollowEntry[], FollowEntry[] | undefined];
         setProfile(profileData);
         setPosts(postsData);
+        hydrateLikes(postsData);
         setHasMore(postsData.length === 20);
         setPage(2);
         setFollowersCount(followers.length);
@@ -73,6 +87,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         const existingIds = new Set(prev.map(p => p._id));
         return [...prev, ...data.filter(p => !existingIds.has(p._id))];
       });
+      hydrateLikes(data);
       setHasMore(data.length === 20);
       setPage(pageToLoad + 1);
     } catch {
@@ -172,6 +187,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 initialLikes={post.likeCount}
                 initialComments={post.replyCount}
                 edited={post.edited}
+                initialIsLiked={likedPostIds.has(post._id)}
               />
             ))
           )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Heart, MessageCircle, Share2, Pencil } from 'lucide-react';
 import { postAPI } from '@/lib/api';
@@ -45,6 +45,13 @@ export default function Post({
   const [currentContent, setCurrentContent] = useState(content);
   const [isEdited, setIsEdited] = useState(edited);
   const [editLoading, setEditLoading] = useState(false);
+
+  // Le statut « liké » est récupéré côté page de façon asynchrone, après le
+  // premier rendu : useState ne prend sa valeur initiale qu'au montage, donc on
+  // resynchronise l'état quand la prop change réellement (hydratation du like).
+  useEffect(() => {
+    setIsLiked(initialIsLiked);
+  }, [initialIsLiked]);
 
   const handleLike = async () => {
     if (likeLoading) return;
