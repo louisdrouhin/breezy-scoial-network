@@ -242,8 +242,13 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NGINX_URL: ${NGINX_URL}
     volumes:
-      - ./front/src:/usr/src/app/front/src
-      - ./front/public:/usr/src/app/front/public
+      # Bind-mount de tout le front pour le hot reload (le code Next vit à la
+      # racine du front : app/, components/, lib/, contexts/, hooks/, etc.).
+      - ./front:/usr/src/app/front
+      # Volumes anonymes : on garde le node_modules et le .next issus du build de
+      # l'image (binaires Linux + cache), au lieu de les écraser par ceux de l'hôte.
+      - /usr/src/app/front/node_modules
+      - /usr/src/app/front/.next
     command: pnpm dev
     networks:
       - frontend

@@ -19,6 +19,7 @@ export default function StatusPage({ params }: StatusPageProps) {
   const { username, postId } = use(params);
   const [post, setPost] = useState<Post | null>(null);
   const [replies, setReplies] = useState<Post[]>([]);
+  const [ancestors, setAncestors] = useState<Post[]>([]);
   const { cache: profileCache, loadProfiles } = useProfileCache();
   const [isLoading, setIsLoading] = useState(true);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
@@ -27,13 +28,19 @@ export default function StatusPage({ params }: StatusPageProps) {
   useEffect(() => {
     const load = async () => {
       try {
-        const [postData, repliesData] = await Promise.all([
+        const [postData, repliesData, ancestorsData] = await Promise.all([
           postAPI.getById(postId),
           postAPI.getReplies(postId),
+          postAPI.getAncestors(postId),
         ]);
         setPost(postData);
         setReplies(repliesData);
-        loadProfiles([postData.authorUsername, ...repliesData.map(r => r.authorUsername)]);
+        setAncestors(ancestorsData);
+        loadProfiles([
+          postData.authorUsername,
+          ...repliesData.map(r => r.authorUsername),
+          ...ancestorsData.map(a => a.authorUsername),
+        ]);
 
         // Hydrate le statut like pour le post principal + toutes les réponses
         const allIds = [postData._id, ...repliesData.map(r => r._id)];
@@ -120,6 +127,36 @@ export default function StatusPage({ params }: StatusPageProps) {
             <ChevronLeft size={20} />
             Back
           </button>
+
+          {/* Fil ancêtre : posts auxquels ce post répond (racine -> parent direct) */}
+          {ancestors.length > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              {ancestors.map(ancestor => (
+                <Link
+                  key={ancestor._id}
+                  href={`/${ancestor.authorUsername}/status/${ancestor._id}`}
+                  style={{ textDecoration: 'none', display: 'block' }}
+                >
+                  <div style={{ backgroundColor: '#ffffff', border: '1px solid #E0E0E0', borderRadius: '8px', padding: '14px 16px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      {profileCache[ancestor.authorUsername]?.avatarUrl ? (
+                        <img src={profileCache[ancestor.authorUsername].avatarUrl!} alt={ancestor.authorUsername} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#1A4731', flexShrink: 0 }} />
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '2px' }}>
+                          <span style={{ fontFamily: 'var(--font-rubik)', fontSize: '13px', fontWeight: 'bold', color: '#1A4731' }}>{ancestor.authorUsername}</span>
+                          <span style={{ fontFamily: 'var(--font-alata)', fontSize: '12px', color: '#999' }}>· {formatTime(ancestor.created_at)}</span>
+                        </div>
+                        <p style={{ fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#555', margin: 0, lineHeight: '1.4', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ancestor.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Main Post */}
           <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '20px', marginBottom: '24px' }}>
