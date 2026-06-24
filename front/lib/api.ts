@@ -199,8 +199,16 @@ export const postAPI = {
     return res.json();
   },
 
-  getByUser: async (username: string, page = 1, limit = 20): Promise<Post[]> => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/user/${username}?page=${page}&limit=${limit}`);
+  // Chaîne des posts parents (racine -> parent direct) du post donné.
+  getAncestors: async (id: string): Promise<Post[]> => {
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/${id}/ancestors`);
+    if (!res.ok) return [];
+    return res.json();
+  },
+
+  getByUser: async (username: string, page = 1, limit = 20, type?: 'posts' | 'replies'): Promise<Post[]> => {
+    const typeParam = type ? `&type=${type}` : '';
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/user/${username}?page=${page}&limit=${limit}${typeParam}`);
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to fetch posts') }
     return res.json();
   },

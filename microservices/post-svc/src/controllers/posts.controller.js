@@ -49,12 +49,40 @@ export const getReplies = async (req, res) => {
   return res.json(posts)
 }
 
+export const getAncestors = async (req, res) => {
+  const post = await Post.findById(req.params.id)
+  if (!post) return res.status(404).json({ message: 'Post introuvable' })
+
+  // Un commentaire est un post avec un `parent` : on remonte la chaîne du parent
+  // direct jusqu'à la racine. Garde-fou (profondeur max) contre une chaîne
+  // anormalement longue ou un cycle de données.
+  const ancestors = []
+  let currentParentId = post.parent
+  let depth = 0
+  while (currentParentId && depth < 50) {
+    const parent = await Post.findById(currentParentId)
+    if (!parent) break
+    ancestors.push(parent)
+    currentParentId = parent.parent
+    depth++
+  }
+
+  // Renvoyé de la racine au parent direct, pour un affichage de haut en bas.
+  return res.json(ancestors.reverse())
+}
+
 export const getPostsByUser = async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1)
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20))
   const skip = (page - 1) * limit
 
-  const posts = await Post.find({ authorUsername: req.params.username })
+  // type=posts -> uniquement les posts racines ; type=replies -> uniquement les
+  // commentaires (post avec parent) ; absent -> tout (compat ascendante).
+  const filter = { authorUsername: req.params.username }
+  if (req.query.type === 'posts') filter.parent = null
+  else if (req.query.type === 'replies') filter.parent = { $ne: null }
+
+  const posts = await Post.find(filter)
     .sort({ created_at: -1 })
     .skip(skip)
     .limit(limit)
