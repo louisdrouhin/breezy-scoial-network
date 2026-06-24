@@ -51,10 +51,22 @@ export interface RegisterResponse { username: string; email: string; role: strin
 export interface LoginResponse { username: string; email: string; role: string }
 export interface RefreshResponse { message: string }
 
+export interface MediaItem {
+  url: string;
+  type: 'image' | 'gif';
+}
+
+export interface GifItem {
+  id: string;
+  preview: string;
+  url: string;
+}
+
 export interface Post {
   _id: string;
   authorUsername: string;
   content: string;
+  media?: MediaItem[];
   tags: string[];
   parent: string | null;
   likeCount: number;
@@ -175,15 +187,37 @@ export const authAPI = {
 // ----------------------------------------------------------------
 
 export const postAPI = {
-  create: async (content: string, tags?: string[], parentId?: string): Promise<Post> => {
+  create: async (content: string, tags?: string[], parentId?: string, media?: MediaItem[]): Promise<Post> => {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, tags, parentId }),
+      body: JSON.stringify({ content, tags, parentId, media }),
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to create post') }
     const data = await res.json();
     return data.post;
+  },
+
+  // Recherche de GIF via le proxy Klipy de post-svc (sans query -> tendances).
+  searchGifs: async (q: string, pos?: string): Promise<{ results: GifItem[]; next: string | null }> => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (pos) params.set('pos', pos);
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/gifs?${params}`);
+    if (!res.ok) return { results: [], next: null };
+    return res.json();
+  },
+
+  // Upload d'un média (image / GIF) attaché ensuite à un post via create().
+  uploadMedia: async (file: File): Promise<MediaItem> => {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/media`, {
+      method: 'POST',
+      body: form,
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to upload media') }
+    return res.json();
   },
 
   getById: async (id: string): Promise<Post> => {

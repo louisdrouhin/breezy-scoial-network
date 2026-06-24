@@ -2,15 +2,84 @@ import Post from '../models/post.model.js'
 import Like from '../models/like.model.js'
 import { notifyLike, notifyComment, notifyMentions } from '../services/notif.service.js'
 
+// URLs distantes autorisées pour les médias : uniquement les hôtes Klipy (GIF).
+// Empêche d'injecter une URL arbitraire (SSRF côté affichage / contenu douteux).
+const REMOTE_MEDIA_RE = /^https:\/\/([a-z0-9-]+\.)*klipy\.com\//i
+const OBJECT_ID_RE = /^[0-9a-f]{24}$/i
+
+// Normalise les médias reçus : whitelist des champs, source autorisée (upload
+// local OU GIF Klipy), type contraint, cap à 1.
+const sanitizeMedia = (media) => {
+  if (!Array.isArray(media)) return []
+  return media
+    .filter(m => m && typeof m.url === 'string' && (m.url.startsWith('/uploads/') || REMOTE_MEDIA_RE.test(m.url)))
+    .slice(0, 1)
+    .map(m => ({ url: m.url, type: REMOTE_MEDIA_RE.test(m.url) || m.type === 'gif' ? 'gif' : 'image' }))
+}
+
+const isObjectId = (id) => typeof id === 'string' && OBJECT_ID_RE.test(id)
+
+const getGifUrl = (gif, ...paths) => {
+  for (const path of paths) {
+    const value = path.split('.').reduce((acc, key) => acc?.[key], gif)
+    if (typeof value === 'string' && value.startsWith('https://')) return value
+  }
+  return null
+}
+
+const normalizeGifResults = (data) => {
+  const rawResults = Array.isArray(data?.results)
+    ? data.results
+    : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.items)
+        ? data.items
+        : []
+
+  return rawResults
+    .map((gif) => {
+      const preview = getGifUrl(
+        gif,
+        'media_formats.tinygif.url',
+        'media_formats.nanogif.url',
+        'media.tinygif.url',
+        'images.preview.url',
+        'preview',
+        'thumbnail',
+        'url',
+      )
+      const url = getGifUrl(
+        gif,
+        'media_formats.gif.url',
+        'media_formats.tinygif.url',
+        'media.gif.url',
+        'images.original.url',
+        'gif.url',
+        'url',
+      )
+      return { id: String(gif.id ?? gif.slug ?? url ?? ''), preview, url }
+    })
+    .filter(gif => gif.id && gif.url && gif.preview)
+}
+
 export const createPost = async (req, res) => {
   const authorUsername = req.get('x-user-username')
   if (!authorUsername) return res.status(401).json({ message: 'Non authentifié' })
 
-  const { content, tags, parentId } = req.body
-  if (!content) return res.status(400).json({ message: 'Le contenu est requis' })
+  const { content, tags, parentId, media } = req.body
+  const cleanContent = typeof content === 'string' ? content.trim() : ''
+  const cleanMedia = sanitizeMedia(media)
+  // Un post doit avoir au moins du texte OU un média.
+  if (!cleanContent && cleanMedia.length === 0) {
+    return res.status(400).json({ message: 'Le contenu ou un média est requis' })
+  }
+  if (cleanContent.length > 280) {
+    return res.status(400).json({ message: 'Contenu trop long (280 caractères max)' })
+  }
 
   let parentAuthor = null
   if (parentId) {
+    if (!isObjectId(parentId)) return res.status(400).json({ message: 'Post parent invalide' })
     const parent = await Post.findById(parentId)
     if (!parent) return res.status(404).json({ message: 'Post parent introuvable' })
     parentAuthor = parent.authorUsername
@@ -19,24 +88,76 @@ export const createPost = async (req, res) => {
 
   const post = await Post.create({
     authorUsername,
-    content,
+    content: cleanContent,
+    media: cleanMedia,
     tags: tags ?? [],
     parent: parentId ?? null,
   })
 
   if (parentAuthor) notifyComment(parentAuthor, authorUsername, parentId)
-  notifyMentions(content, authorUsername, post._id.toString())
+  notifyMentions(cleanContent, authorUsername, post._id.toString())
 
   return res.status(201).json({ post })
 }
 
+// Upload d'un média (image / GIF) : stocke le fichier et renvoie son URL servie
+// par Nginx. Le front l'attache ensuite au post via createPost.
+export const uploadPostMedia = (req, res) => {
+  const username = req.get('x-user-username')
+  if (!username) return res.status(401).json({ message: 'Non authentifié' })
+  if (!req.file) return res.status(400).json({ message: 'Aucun fichier fourni' })
+
+  const url = `/uploads/${req.file.filename}`
+  const type = req.file.mimetype === 'image/gif' ? 'gif' : 'image'
+  return res.status(201).json({ url, type })
+}
+
+// Proxy de recherche de GIF Klipy. La clé API reste côté serveur (jamais
+// exposée au navigateur). Sans query -> tendances (featured).
+const KLIPY_BASE = 'https://api.klipy.com/v2'
+
+export const searchGifs = async (req, res) => {
+  const username = req.get('x-user-username')
+  if (!username) return res.status(401).json({ message: 'Non authentifié' })
+
+  const apiKey = process.env.KLIPY_API_KEY
+  if (!apiKey) return res.status(503).json({ message: 'Recherche GIF indisponible (clé Klipy manquante)' })
+
+  const q = (req.query.q ?? '').toString().trim()
+  const pos = (req.query.pos ?? '').toString()
+  const params = new URLSearchParams({
+    key: apiKey,
+    client_key: 'breezy',
+    limit: '24',
+    media_filter: 'tinygif,gif',
+    contentfilter: 'high',
+  })
+  if (pos) params.set('pos', pos)
+  if (q) params.set('q', q)
+
+  try {
+    const endpoint = `${KLIPY_BASE}/${q ? 'search' : 'featured'}?${params}`
+    const r = await fetch(endpoint)
+    if (!r.ok) return res.status(502).json({ message: 'Erreur lors de la recherche Klipy' })
+
+    const data = await r.json()
+    const results = normalizeGifResults(data)
+
+    return res.json({ results, next: data.next ?? null })
+  } catch {
+    return res.status(502).json({ message: 'Erreur lors de la recherche Klipy' })
+  }
+}
+
 export const getPost = async (req, res) => {
+  if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
   return res.json({ post })
 }
 
 export const getReplies = async (req, res) => {
+  if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
   const page = Math.max(1, parseInt(req.query.page) || 1)
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20))
   const skip = (page - 1) * limit
@@ -50,6 +171,7 @@ export const getReplies = async (req, res) => {
 }
 
 export const getAncestors = async (req, res) => {
+  if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
 
@@ -93,6 +215,7 @@ export const getPostsByUser = async (req, res) => {
 export const updatePost = async (req, res) => {
   const username = req.get('x-user-username')
   if (!username) return res.status(401).json({ message: 'Non authentifié' })
+  if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
 
   const { content } = req.body
   if (!content || !content.trim()) return res.status(400).json({ message: 'Le contenu est requis' })
@@ -116,6 +239,7 @@ export const deletePost = async (req, res) => {
   const username = req.get('x-user-username')
   const role = req.get('x-user-role')
   if (!username) return res.status(401).json({ message: 'Non authentifié' })
+  if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
 
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
@@ -137,6 +261,7 @@ export const deletePost = async (req, res) => {
 export const getLikeStatus = async (req, res) => {
   const username = req.get('x-user-username')
   if (!username) return res.status(401).json({ message: 'Non authentifié' })
+  if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
   const existing = await Like.findOne({ username, post: req.params.id })
   return res.json({ liked: !!existing })
 }
@@ -144,6 +269,7 @@ export const getLikeStatus = async (req, res) => {
 export const likePost = async (req, res) => {
   const username = req.get('x-user-username')
   if (!username) return res.status(401).json({ message: 'Non authentifié' })
+  if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
 
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
@@ -166,6 +292,7 @@ export const likePost = async (req, res) => {
 export const unlikePost = async (req, res) => {
   const username = req.get('x-user-username')
   if (!username) return res.status(401).json({ message: 'Non authentifié' })
+  if (!isObjectId(req.params.id)) return res.status(404).json({ message: 'Post introuvable' })
 
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })

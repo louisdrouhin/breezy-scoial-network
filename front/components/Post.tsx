@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Heart, MessageCircle, Share2, Pencil } from 'lucide-react';
-import { postAPI } from '@/lib/api';
+import { Heart, MessageCircle, Share2, Pencil, Trash2 } from 'lucide-react';
+import { postAPI, MediaItem } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface PostProps {
   id?: string;
@@ -12,11 +13,13 @@ interface PostProps {
   username?: string;
   avatarUrl?: string | null;
   content: string;
+  media?: MediaItem[];
   createdAt: Date;
   initialLikes?: number;
   initialComments?: number;
   edited?: boolean;
   initialIsLiked?: boolean;
+  onDeleted?: (id: string) => void;
 }
 
 export default function Post({
@@ -25,11 +28,13 @@ export default function Post({
   username = 'username',
   avatarUrl = null,
   content = 'This is a sample post content',
+  media = [],
   createdAt = new Date(),
   initialLikes = 0,
   initialComments = 0,
   edited = false,
   initialIsLiked = false,
+  onDeleted,
 }: PostProps) {
   const { user } = useAuth();
   const isOwner = user?.username === username;
@@ -45,6 +50,8 @@ export default function Post({
   const [currentContent, setCurrentContent] = useState(content);
   const [isEdited, setIsEdited] = useState(edited);
   const [editLoading, setEditLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Le statut « liké » est récupéré côté page de façon asynchrone, après le
   // premier rendu : useState ne prend sa valeur initiale qu'au montage, donc on
@@ -106,6 +113,18 @@ export default function Post({
     }
   };
 
+  const handleDelete = async () => {
+    if (deleteLoading) return;
+    setDeleteLoading(true);
+    try {
+      await postAPI.delete(id);
+      onDeleted?.(id); // le parent retire le post de la liste
+    } catch {
+      setDeleteLoading(false); // on ne reset qu'en cas d'échec (sinon démonté)
+      setShowDeleteModal(false);
+    }
+  };
+
   const copyToClipboard = (id: string, author: string) => {
     const url = `${window.location.origin}/${author}/status/${id}`;
     navigator.clipboard.writeText(url);
@@ -123,6 +142,18 @@ export default function Post({
         marginBottom: '16px',
       }}
     >
+      {showDeleteModal && (
+        <ConfirmModal
+          title="Delete post"
+          message="This post will be permanently deleted. This action cannot be undone."
+          confirmLabel="Delete"
+          danger
+          loading={deleteLoading}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteModal(false)}
+        />
+      )}
+
       {/* Header with avatar and user info */}
       <div
         style={{
@@ -162,13 +193,24 @@ export default function Post({
           </p>
         </div>
         {isOwner && !isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999', flexShrink: 0 }}
-            title="Edit"
-          >
-            <Pencil size={15} />
-          </button>
+          <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+            <button
+              onClick={() => setIsEditing(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
+              title="Edit"
+            >
+              <Pencil size={15} />
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
+              title="Delete"
+              onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#999')}
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
         )}
       </div>
 
@@ -203,6 +245,21 @@ export default function Post({
             {currentContent}
           </p>
         </Link>
+      )}
+
+      {/* Médias (images / GIF) */}
+      {media.length > 0 && (
+        <div style={{ marginBottom: '16px' }}>
+          {media.map((m, i) => (
+            <img
+              key={i}
+              src={m.url}
+              alt=""
+              loading="lazy"
+              style={{ maxWidth: '100%', maxHeight: '500px', borderRadius: '8px', border: '1px solid #1A4731', display: 'block' }}
+            />
+          ))}
+        </div>
       )}
 
       {/* Actions */}

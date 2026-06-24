@@ -8,8 +8,21 @@ const postSchema = new Schema(
     },
     content: {
       type: String,
-      required: true,
-      maxlength: 280, // Fx3
+      // Optionnel : un post peut n'être qu'un média (validation « contenu OU
+      // média requis » faite dans le controller). maxlength conservé (Fx3).
+      default: "",
+      maxlength: 280,
+    },
+    // Médias optionnels (images / GIF). Cap applicatif à 1 (cf. controller).
+    media: {
+      type: [
+        {
+          _id: false,
+          url: { type: String, required: true },
+          type: { type: String, enum: ["image", "gif"], default: "image" },
+        },
+      ],
+      default: [],
     },
     tags: {
       type: [String], // Fx12 / Fx13
