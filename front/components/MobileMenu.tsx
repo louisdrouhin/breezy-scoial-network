@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation';
 import { X, Settings, Shield, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfileCache } from '@/hooks/useProfileCache';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
   const { cache, loadProfiles } = useProfileCache();
+  const { t } = useLanguage();
   const router = useRouter();
 
   const profile = user ? cache[user.username] : null;
@@ -148,7 +150,7 @@ export default function MobileMenu() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'transparent', textDecoration: 'none', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '16px' }}
           >
             <Settings size={20} />
-            <span>Settings</span>
+            <span>{t('nav.settings')}</span>
           </Link>
 
           <Link
@@ -157,7 +159,7 @@ export default function MobileMenu() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'transparent', textDecoration: 'none', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '16px' }}
           >
             <Shield size={20} />
-            <span>Privacy Policy</span>
+            <span>{t('nav.privacy')}</span>
           </Link>
 
           <Link
@@ -166,7 +168,7 @@ export default function MobileMenu() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'transparent', textDecoration: 'none', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '16px' }}
           >
             <Shield size={20} />
-            <span>Terms of Service</span>
+            <span>{t('nav.terms')}</span>
           </Link>
         </div>
 
@@ -176,7 +178,7 @@ export default function MobileMenu() {
           style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#F4F5F4', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#dc2626', fontSize: '16px', textAlign: 'left', borderTop: '1px solid #E0E0E0' }}
         >
           <LogOut size={20} />
-          <span>Logout</span>
+          <span>{t('nav.logout')}</span>
         </button>
       </div>
     </>

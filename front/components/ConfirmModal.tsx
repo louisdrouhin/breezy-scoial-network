@@ -1,5 +1,7 @@
 'use client';
 
+import { useLanguage } from '@/contexts/LanguageContext';
+
 interface ConfirmModalProps {
   title?: string;
   message: string;
@@ -13,15 +15,17 @@ interface ConfirmModalProps {
 
 // Modale de confirmation générique (overlay + clic extérieur = annuler).
 export default function ConfirmModal({
-  title = 'Are you sure?',
+  title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   onCancel,
   loading = false,
   danger = false,
 }: ConfirmModalProps) {
+  const { t } = useLanguage();
+
   return (
     <div
       onClick={onCancel}
@@ -49,7 +53,7 @@ export default function ConfirmModal({
         }}
       >
         <h3 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 8px 0', fontSize: '18px' }}>
-          {title}
+          {title ?? t('common.areYouSure')}
         </h3>
         <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: '0 0 20px 0', fontSize: '14px', lineHeight: '1.5' }}>
           {message}
@@ -69,7 +73,7 @@ export default function ConfirmModal({
               fontSize: '14px',
             }}
           >
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             onClick={onConfirm}
@@ -86,7 +90,7 @@ export default function ConfirmModal({
               opacity: loading ? 0.6 : 1,
             }}
           >
-            {loading ? '...' : confirmLabel}
+            {loading ? '...' : (confirmLabel ?? t('common.confirm'))}
           </button>
         </div>
       </div>

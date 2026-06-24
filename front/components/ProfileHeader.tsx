@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { userAPI, Profile } from '@/lib/api';
 import UploadImageModal from '@/components/UploadImageModal';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ProfileHeaderProps {
   displayName?: string;
@@ -38,6 +39,7 @@ export default function ProfileHeader({
   const [isSaving, setIsSaving] = useState(false);
   const [uploadModal, setUploadModal] = useState<'avatar' | 'banner' | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!showMenu) return;
@@ -135,19 +137,19 @@ export default function ProfileHeader({
                     onClick={() => { setShowMenu(false); setUploadModal('banner'); }}
                     style={{ width: '100%', padding: '12px 16px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731', borderBottom: '1px solid #F4F5F4' }}
                   >
-                    Edit Banner
+                    {t('profile.editBanner')}
                   </button>
                   <button
                     onClick={() => { setShowMenu(false); setUploadModal('avatar'); }}
                     style={{ width: '100%', padding: '12px 16px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731', borderBottom: '1px solid #F4F5F4' }}
                   >
-                    Edit Photo
+                    {t('profile.editPhoto')}
                   </button>
                   <button
                     onClick={() => { setShowMenu(false); setEditingBio(true); }}
                     style={{ width: '100%', padding: '12px 16px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#1A4731' }}
                   >
-                    Edit Bio
+                    {t('profile.editBio')}
                   </button>
                 </div>
               )}
@@ -191,19 +193,19 @@ export default function ProfileHeader({
                     disabled={isSaving}
                     style={{ padding: '6px 16px', backgroundColor: '#1A4731', color: 'white', border: 'none', borderRadius: '4px', fontFamily: 'var(--font-alata)', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.6 : 1 }}
                   >
-                    {isSaving ? '...' : 'Save'}
+                    {isSaving ? '...' : t('common.save')}
                   </button>
                   <button
                     onClick={() => { setEditingBio(false); setBioText(bio); }}
                     style={{ padding: '6px 16px', backgroundColor: 'transparent', color: '#1A4731', border: '1px solid #1A4731', borderRadius: '4px', fontFamily: 'var(--font-alata)', cursor: 'pointer' }}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
             ) : (
               <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0, marginBottom: '16px' }}>
-                {bio || <span style={{ color: '#ccc' }}>No bio</span>}
+                {bio || <span style={{ color: '#ccc' }}>{t('profile.noBio')}</span>}
               </p>
             )}
 
@@ -211,11 +213,11 @@ export default function ProfileHeader({
             <div style={{ display: 'flex', gap: '32px' }}>
               <div>
                 <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: 0, fontSize: '18px', fontWeight: 'bold' }}>{followers}</p>
-                <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0, fontSize: '12px' }}>Followers</p>
+                <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0, fontSize: '12px' }}>{t('profile.followers')}</p>
               </div>
               <div>
                 <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: 0, fontSize: '18px', fontWeight: 'bold' }}>{following}</p>
-                <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0, fontSize: '12px' }}>Following</p>
+                <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0, fontSize: '12px' }}>{t('profile.following')}</p>
               </div>
             </div>
 
@@ -242,7 +244,7 @@ export default function ProfileHeader({
               transition: 'all 0.15s',
             }}
           >
-            {followLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
+            {followLoading ? '...' : isFollowing ? t('profile.unfollow') : t('profile.follow')}
           </button>
         )}
       </div>

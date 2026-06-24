@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Upload, Image as ImageIcon } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UploadImageModalProps {
   type: 'avatar' | 'banner';
@@ -19,6 +20,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   // position de l'image dans le cadre (en px relatif au cadre)
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -35,8 +37,8 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
 
   const handleFile = (f: File) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowed.includes(f.type)) { setError('Unsupported format. Use JPG, PNG, WEBP or GIF.'); return; }
-    if (f.size > 5 * 1024 * 1024) { setError('File too large (max 5 MB).'); return; }
+    if (!allowed.includes(f.type)) { setError(t('upload.unsupported')); return; }
+    if (f.size > 5 * 1024 * 1024) { setError(t('upload.tooLarge')); return; }
     setError(null);
     const url = URL.createObjectURL(f);
     setImageSrc(url);
@@ -134,13 +136,13 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
       await onUpload(file);
       onClose();
     } catch {
-      setError('Upload failed. Please try again.');
+      setError(t('upload.failed'));
     } finally {
       setIsUploading(false);
     }
   };
 
-  const label = type === 'avatar' ? 'profile picture' : 'banner';
+  const label = type === 'avatar' ? t('upload.profilePicture') : t('upload.banner');
 
   return (
     <div
@@ -152,7 +154,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2 style={{ margin: 0, fontFamily: 'var(--font-rubik)', color: '#1A4731', fontSize: '18px' }}>
-            Edit {label}
+            {t('upload.edit', { label })}
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#666' }}>
             <X size={20} />
@@ -163,7 +165,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
           <>
             {/* Éditeur de position */}
             <p style={{ margin: '0 0 8px', fontFamily: 'var(--font-alata)', color: '#666', fontSize: '12px', textAlign: 'center' }}>
-              Drag to reposition · Scroll to zoom
+              {t('upload.instructions')}
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
               <div
@@ -205,7 +207,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
                 onClick={() => fileInputRef.current?.click()}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: '1px solid #ccc', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontFamily: 'var(--font-alata)', color: '#666', fontSize: '13px' }}
               >
-                <Upload size={14} /> Change image
+                <Upload size={14} /> {t('upload.changeImage')}
               </button>
             </div>
           </>
@@ -226,10 +228,10 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
               <ImageIcon size={36} color="#ccc" />
               <p style={{ margin: 0, fontFamily: 'var(--font-alata)', color: '#666', fontSize: '14px' }}>
-                Drag an image here or click to choose
+                {t('upload.drop')}
               </p>
               <p style={{ margin: 0, fontFamily: 'var(--font-alata)', color: '#999', fontSize: '12px' }}>
-                JPG, PNG, WEBP, GIF — max 5 MB
+                {t('upload.formats')}
               </p>
             </div>
           </div>
@@ -255,7 +257,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
             onClick={onClose}
             style={{ padding: '10px 20px', background: 'none', border: '1px solid #1A4731', borderRadius: '6px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: 'pointer' }}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSubmit}
@@ -267,7 +269,7 @@ export default function UploadImageModal({ type, onUpload, onClose }: UploadImag
               opacity: !imageSrc || isUploading ? 0.6 : 1,
             }}
           >
-            {isUploading ? 'Uploading...' : 'Save'}
+            {isUploading ? t('common.uploading') : t('common.save')}
           </button>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Search } from 'lucide-react';
 import { postAPI, GifItem } from '@/lib/api';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GifPickerModalProps {
   onSelect: (gif: GifItem) => void;
@@ -14,6 +15,7 @@ export default function GifPickerModal({ onSelect, onClose }: GifPickerModalProp
   const [gifs, setGifs] = useState<GifItem[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   // Recherche debouncée (sans query -> tendances Klipy).
   useEffect(() => {
@@ -54,12 +56,12 @@ export default function GifPickerModal({ onSelect, onClose }: GifPickerModalProp
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Rechercher un GIF…"
+              placeholder={t('gif.search')}
               autoFocus
               style={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'var(--font-alata)', fontSize: '14px', color: '#1A4731' }}
             />
           </div>
-          <button onClick={onClose} title="Fermer" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: '4px', display: 'flex' }}>
+          <button onClick={onClose} title={t('common.close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: '4px', display: 'flex' }}>
             <X size={20} />
           </button>
         </div>
@@ -68,7 +70,7 @@ export default function GifPickerModal({ onSelect, onClose }: GifPickerModalProp
         <div style={{ overflowY: 'auto', padding: '12px' }}>
           {gifs.length === 0 && !loading ? (
             <p style={{ textAlign: 'center', color: '#999', fontFamily: 'var(--font-alata)', fontSize: '14px', padding: '40px 0' }}>
-              Aucun GIF trouvé
+              {t('gif.none')}
             </p>
           ) : (
             <div style={{ columnCount: 2, columnGap: '8px' }}>
@@ -86,7 +88,7 @@ export default function GifPickerModal({ onSelect, onClose }: GifPickerModalProp
 
           {loading && (
             <p style={{ textAlign: 'center', color: '#999', fontFamily: 'var(--font-alata)', fontSize: '13px', padding: '12px 0' }}>
-              Chargement…
+              {t('gif.loading')}
             </p>
           )}
 
@@ -95,14 +97,14 @@ export default function GifPickerModal({ onSelect, onClose }: GifPickerModalProp
               onClick={loadMore}
               style={{ display: 'block', margin: '8px auto', padding: '8px 16px', background: 'none', border: '1px solid #1A4731', borderRadius: '6px', color: '#1A4731', fontFamily: 'var(--font-alata)', fontSize: '13px', cursor: 'pointer' }}
             >
-              Charger plus
+              {t('gif.more')}
             </button>
           )}
         </div>
 
         {/* Attribution Klipy (requise par les conditions d'utilisation) */}
         <div style={{ padding: '8px 16px', borderTop: '1px solid #E0E0E0', textAlign: 'center', fontFamily: 'var(--font-alata)', fontSize: '11px', color: '#bbb' }}>
-          Propulsé par Klipy
+          {t('gif.powered')}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import RichPostText from '@/components/RichPostText';
 import { ChevronLeft } from 'lucide-react';
 import { postAPI, Post as PostType } from '@/lib/api';
 import { useProfileCache } from '@/hooks/useProfileCache';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StatusPageProps {
   params: Promise<{ username: string; postId: string }>;
@@ -25,6 +26,7 @@ export default function StatusPage({ params }: StatusPageProps) {
   const { cache: profileCache, loadProfiles } = useProfileCache();
   const [isLoading, setIsLoading] = useState(true);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const { t } = useLanguage();
 
   useEffect(() => {
     const load = async () => {
@@ -67,10 +69,10 @@ export default function StatusPage({ params }: StatusPageProps) {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-    if (diffMins < 1) return 'now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
+    if (diffMins < 1) return t('time.now');
+    if (diffMins < 60) return t('time.minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('time.hoursAgo', { count: diffHours });
+    return t('time.daysAgo', { count: diffDays });
   };
 
   const handleReplyCreated = (reply?: PostType) => {
@@ -89,14 +91,14 @@ export default function StatusPage({ params }: StatusPageProps) {
   };
 
   if (isLoading) {
-    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)' }}>Loading...</div>;
+    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)' }}>{t('common.loading')}</div>;
   }
 
   if (!post) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'var(--font-alata)', color: '#999' }}>Post not found</p>
-        <Link href="/"><button style={{ color: '#1A4731', cursor: 'pointer', border: 'none', background: 'none', fontFamily: 'var(--font-alata)' }}>Back to home</button></Link>
+        <p style={{ fontFamily: 'var(--font-alata)', color: '#999' }}>{t('post.notFound')}</p>
+        <Link href="/"><button style={{ color: '#1A4731', cursor: 'pointer', border: 'none', background: 'none', fontFamily: 'var(--font-alata)' }}>{t('nav.home')}</button></Link>
       </div>
     );
   }
@@ -111,7 +113,7 @@ export default function StatusPage({ params }: StatusPageProps) {
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#1A4731', fontFamily: 'var(--font-rubik)', fontSize: '14px', marginBottom: '16px' }}
           >
             <ChevronLeft size={20} />
-            Back
+            {t('common.back')}
           </button>
 
           {/* Fil ancêtre : posts auxquels ce post répond (racine -> parent direct) */}
@@ -134,12 +136,12 @@ export default function StatusPage({ params }: StatusPageProps) {
                           <span style={{ fontFamily: 'var(--font-rubik)', fontSize: '13px', fontWeight: 'bold', color: '#1A4731' }}>{ancestor.authorUsername}</span>
                           <span style={{ fontFamily: 'var(--font-alata)', fontSize: '12px', color: '#999' }}>· {formatTime(ancestor.created_at)}</span>
                           <Link href={`/${ancestor.authorUsername}/status/${ancestor._id}`} style={{ fontFamily: 'var(--font-alata)', fontSize: '12px', color: '#1A4731', textDecoration: 'none' }}>
-                            · View
+                            · {t('common.view')}
                           </Link>
                         </div>
                         {ancestor.deleted ? (
                           <p style={{ fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#777', margin: 0, lineHeight: '1.4', fontStyle: 'italic' }}>
-                            Breeze supprimé
+                            {t('post.deleted')}
                           </p>
                         ) : (
                           <RichPostText text={ancestor.content} style={{ fontSize: '13px', color: '#555', margin: 0, lineHeight: '1.4' }} />
@@ -170,13 +172,13 @@ export default function StatusPage({ params }: StatusPageProps) {
           />
 
           {/* Reply input */}
-          <PostBar onPostCreated={handleReplyCreated} parentId={post._id} placeholder="Write a reply..." />
+          <PostBar onPostCreated={handleReplyCreated} parentId={post._id} placeholder={t('post.replyPlaceholder')} />
 
           {/* Replies */}
           {replies.length > 0 && (
             <div>
               <h3 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', fontSize: '14px', margin: '0 0 16px 0' }}>
-                Replies ({replies.length})
+                {t('profile.replies')} ({replies.length})
               </h3>
               {replies.map(reply => (
                 <Post

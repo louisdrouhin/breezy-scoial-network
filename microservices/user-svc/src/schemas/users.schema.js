@@ -9,6 +9,7 @@ export const ProfileSchema = z.object({
   notifLikes: z.boolean().optional(),
   notifMentions: z.boolean().optional(),
   notifFollows: z.boolean().optional(),
+  language: z.enum(["en", "fr"]).optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

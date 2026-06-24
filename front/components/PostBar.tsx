@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfileCache } from '@/hooks/useProfileCache';
 import GifPickerModal from '@/components/GifPickerModal';
 import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE, mediaItemFromUrl } from '@/lib/media';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PostBarProps {
   onPostCreated?: (post?: Post) => void;
@@ -29,6 +30,8 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
   const objectUrlRef = useRef<string | null>(null);
   const { user } = useAuth();
   const { cache, loadProfiles } = useProfileCache();
+  const { t } = useLanguage();
+  const textareaPlaceholder = placeholder === 'Something to say?' ? t('post.placeholder') : placeholder;
 
   useEffect(() => {
     if (user) loadProfiles([user.username]);
@@ -64,11 +67,11 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
     e.target.value = ''; // permet de re-sélectionner le même fichier
     if (!file) return;
     if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-      setError('Format non supporté (jpeg, png, webp, gif uniquement)');
+      setError(t('post.unsupportedFormat'));
       return;
     }
     if (file.size > MAX_MEDIA_SIZE) {
-      setError('Fichier trop volumineux (10 Mo max)');
+      setError(t('post.fileTooLarge'));
       return;
     }
     setError(null);
@@ -127,7 +130,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
       clearMedia();
       onPostCreated?.(post);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to publish post');
+      setError(e instanceof Error ? e.message : t('post.publishFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -170,7 +173,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
               handleSubmit();
             }
           }}
-          placeholder={placeholder}
+          placeholder={textareaPlaceholder}
           maxLength={280}
           style={{
             flex: 1,
@@ -193,12 +196,12 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
         <div style={{ position: 'relative', display: 'inline-block', marginBottom: '12px' }}>
           <img
             src={mediaPreview}
-            alt="aperçu"
+            alt=""
             style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid #1A4731', display: 'block' }}
           />
           <button
             onClick={clearMedia}
-            title="Retirer"
+            title={t('post.removeMedia')}
             style={{ position: 'absolute', top: '8px', right: '8px', width: '28px', height: '28px', borderRadius: '50%', border: 'none', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <X size={16} />
@@ -211,7 +214,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
           <input
             value={mediaUrl}
             onChange={e => handleMediaUrlChange(e.target.value)}
-            placeholder="Coller un lien média"
+            placeholder={t('post.pasteMediaUrl')}
             style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #1A4731', borderRadius: '6px', fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#1A4731', outline: 'none' }}
           />
         </div>
@@ -236,7 +239,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading || hasMedia}
-            title="Ajouter une image ou un GIF"
+            title={t('post.addImage')}
             style={{
               background: 'none',
               border: 'none',
@@ -252,7 +255,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
           <button
             onClick={() => setIsMediaUrlOpen(prev => !prev)}
             disabled={isLoading || hasMedia}
-            title="Ajouter un média par URL"
+            title={t('post.addMediaUrl')}
             style={{
               background: 'none',
               border: 'none',
@@ -268,7 +271,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
           <button
             onClick={() => setIsGifPickerOpen(true)}
             disabled={isLoading || hasMedia}
-            title="Choisir un GIF Klipy"
+            title={t('post.pickGif')}
             style={{
               background: 'none',
               border: 'none',
@@ -316,7 +319,7 @@ export default function PostBar({ onPostCreated, parentId, placeholder = 'Someth
             opacity: !canSubmit ? 0.6 : 1,
           }}
         >
-          {isLoading ? '...' : 'Post'}
+          {isLoading ? '...' : t('post.publish')}
         </button>
       </div>
 

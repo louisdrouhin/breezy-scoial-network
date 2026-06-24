@@ -8,10 +8,12 @@ import { useNotifCount } from "@/contexts/NotifContext";
 import { userAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Navbar() {
   const { logout, user } = useAuth();
   const { unreadCount } = useNotifCount();
+  const { t } = useLanguage();
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -47,7 +49,7 @@ export default function Navbar() {
         className="font-rubik"
       >
         <House size={24} />
-        <span>Home</span>
+        <span>{t('nav.home')}</span>
       </Link>
       <Link
         href={user ? `/profile/${user.username}` : "/profile"}
@@ -62,7 +64,7 @@ export default function Navbar() {
         className="font-rubik"
       >
         <CircleUser size={24} />
-        <span>Profile</span>
+        <span>{t('nav.profile')}</span>
       </Link>
       <Link
         href="/notifications"
@@ -102,7 +104,7 @@ export default function Navbar() {
             </span>
           )}
         </div>
-        <span>Notifications</span>
+        <span>{t('nav.notifications')}</span>
       </Link>
       <Link
         href="/settings"
@@ -117,7 +119,7 @@ export default function Navbar() {
         className="font-rubik"
       >
         <Settings size={24} />
-        <span>Settings</span>
+        <span>{t('nav.settings')}</span>
       </Link>
 
       <div
@@ -151,7 +153,7 @@ export default function Navbar() {
           />
         )}
         <span style={{ color: "white", fontFamily: "var(--font-alata)" }}>
-          {user?.username || "User"}
+          {user?.username || t('nav.user')}
         </span>
         <button
           onClick={handleLogout}

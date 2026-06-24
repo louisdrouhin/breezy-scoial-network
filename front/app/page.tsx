@@ -8,12 +8,14 @@ import Subscriptions from '@/components/Subscriptions';
 import Post from '@/components/Post';
 import { feedAPI, postAPI, Post as PostType } from '@/lib/api';
 import { useProfileCache } from '@/hooks/useProfileCache';
+import { useLanguage } from '@/contexts/LanguageContext';
 // Post as PostType used only for feed — newly created posts are not injected into the feed
 
 export default function Home() {
   const [posts, setPosts] = useState<PostType[]>([]);
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
   const { cache: profileCache, loadProfiles } = useProfileCache();
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -111,7 +113,7 @@ export default function Home() {
             borderRadius: '999px', fontFamily: 'var(--font-alata)', fontSize: '14px',
             zIndex: 200, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
           }}>
-            Post published!
+            {t('feed.postPublished')}
           </div>
         )}
 
@@ -124,7 +126,7 @@ export default function Home() {
               color: '#999',
             }}
           >
-            No posts yet. Follow some users to see their content here.
+            {t('feed.empty')}
           </div>
         )}
 
@@ -149,7 +151,7 @@ export default function Home() {
 
         {isLoading && (
           <div style={{ textAlign: 'center', padding: '20px', fontFamily: 'var(--font-alata)', color: '#999' }}>
-            Loading...
+            {t('common.loading')}
           </div>
         )}
 
@@ -165,7 +167,7 @@ export default function Home() {
               marginTop: '8px',
             }}
           >
-            You're all caught up
+            {t('feed.caughtUp')}
           </div>
         )}
 
@@ -187,11 +189,11 @@ export default function Home() {
           }}
         >
           <Link href="/privacy-policy" style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '12px', textDecoration: 'none' }}>
-            Privacy Policy
+            {t('nav.privacy')}
           </Link>
           <span style={{ color: '#E0E0E0' }}>•</span>
           <Link href="/terms-of-service" style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '12px', textDecoration: 'none' }}>
-            Terms of Service
+            {t('nav.terms')}
           </Link>
         </div>
       </div>

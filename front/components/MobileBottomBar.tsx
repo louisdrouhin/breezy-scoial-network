@@ -7,6 +7,7 @@ import { useState } from 'react';
 import MobilePostModal from './MobilePostModal';
 import { useNotifCount } from '@/contexts/NotifContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function MobileBottomBar() {
   const pathname = usePathname();
@@ -14,6 +15,7 @@ export default function MobileBottomBar() {
   const [toast, setToast] = useState(false);
   const { unreadCount } = useNotifCount();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
   const profileHref = user ? `/profile/${user.username}` : '/profile';
@@ -36,7 +38,7 @@ export default function MobileBottomBar() {
           zIndex: 200, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
           animation: 'slideUp 0.2s ease',
         }}>
-          Post published!
+          {t('feed.postPublished')}
         </div>
       )}
 

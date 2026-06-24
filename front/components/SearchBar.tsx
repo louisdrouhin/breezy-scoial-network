@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
 import { userAPI } from '@/lib/api';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SearchResult {
   username: string;
@@ -18,6 +19,7 @@ export default function SearchBar() {
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { t } = useLanguage();
   const trimmedQuery = query.trim();
   const tagQuery = trimmedQuery.startsWith('#') ? trimmedQuery.slice(1).trim() : '';
   const isTagSearch = tagQuery.length > 0;
@@ -88,7 +90,7 @@ export default function SearchBar() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for a user or #tag..."
+          placeholder={t('search.placeholder')}
           style={{
             flex: 1,
             border: 'none',
@@ -134,7 +136,7 @@ export default function SearchBar() {
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f0f7f3')}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
-              Search #{tagQuery}
+              {t('search.tag', { tag: tagQuery })}
             </div>
           </Link>
         </div>
@@ -208,7 +210,7 @@ export default function SearchBar() {
             zIndex: 100,
           }}
         >
-          <p style={{ margin: 0, fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#999' }}>No users found</p>
+          <p style={{ margin: 0, fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#999' }}>{t('search.noUsers')}</p>
         </div>
       )}
 

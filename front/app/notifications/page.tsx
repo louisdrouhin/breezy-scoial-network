@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Notification from '@/components/Notification';
 import { notifAPI, Notif } from '@/lib/api';
 import { useNotifCount } from '@/contexts/NotifContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Cache module-level : survit aux navigations sans remonter le composant
 let notifsCache: Notif[] | null = null;
@@ -14,6 +15,7 @@ export default function Notifications() {
   const [markingAll, setMarkingAll] = useState(false);
   const fetchedRef = useRef(false);
   const { decrementUnread, clearUnread } = useNotifCount();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -82,7 +84,7 @@ export default function Notifications() {
         {/* Header */}
         <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h1 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: 0, fontSize: '28px', whiteSpace: 'nowrap' }}>Notifications</h1>
+            <h1 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: 0, fontSize: '28px', whiteSpace: 'nowrap' }}>{t('notifications.title')}</h1>
             {unreadCount > 0 && (
               <span style={{ backgroundColor: '#1A4731', color: 'white', fontFamily: 'var(--font-alata)', fontSize: '12px', borderRadius: '999px', padding: '2px 10px', flexShrink: 0 }}>
                 {unreadCount}
@@ -95,16 +97,16 @@ export default function Notifications() {
               disabled={markingAll}
               style={{ background: 'none', border: '1px solid #1A4731', borderRadius: '6px', padding: '8px 16px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: markingAll ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: markingAll ? 0.6 : 1, whiteSpace: 'nowrap', flexShrink: 0 }}
             >
-              Mark all as read
+              {t('notifications.markAll')}
             </button>
           )}
         </div>
 
         {/* Liste */}
         {isLoading ? (
-          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '40px' }}>Loading...</p>
+          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '40px' }}>{t('common.loading')}</p>
         ) : notifs.length === 0 ? (
-          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '60px' }}>No notifications yet.</p>
+          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '60px' }}>{t('notifications.empty')}</p>
         ) : (
           notifs.map(notif => (
             <Notification

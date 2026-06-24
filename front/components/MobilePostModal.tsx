@@ -5,6 +5,7 @@ import { Film, ImagePlus, Link2, X } from 'lucide-react';
 import { postAPI, type MediaItem } from '@/lib/api';
 import GifPickerModal from '@/components/GifPickerModal';
 import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE, mediaItemFromUrl } from '@/lib/media';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MobilePostModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
   const charLimit = 280;
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -62,11 +64,11 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
     e.target.value = '';
     if (!file) return;
     if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-      setError('Format non supporté (jpeg, png, webp, gif uniquement)');
+      setError(t('post.unsupportedFormat'));
       return;
     }
     if (file.size > MAX_MEDIA_SIZE) {
-      setError('Fichier trop volumineux (10 Mo max)');
+      setError(t('post.fileTooLarge'));
       return;
     }
 
@@ -117,7 +119,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
       onClose();
       onPostCreated?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to publish post');
+      setError(e instanceof Error ? e.message : t('post.publishFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -163,7 +165,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
 
         <div style={{ marginBottom: '16px', marginTop: '8px' }}>
           <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', fontSize: '20px', margin: 0 }}>
-            Create Post
+            {t('post.create')}
           </h2>
         </div>
 
@@ -177,7 +179,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
               handlePost();
             }
           }}
-          placeholder="What's on your mind?"
+          placeholder={t('post.mobilePlaceholder')}
           style={{
             width: '100%', padding: '12px', border: '1px solid #1A4731', borderRadius: '8px',
             fontFamily: 'var(--font-alata)', fontSize: '14px', boxSizing: 'border-box',
@@ -194,7 +196,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
             />
             <button
               onClick={clearMedia}
-              title="Retirer"
+              title={t('post.removeMedia')}
               style={{ position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', borderRadius: '50%', border: 'none', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <X size={16} />
@@ -206,7 +208,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
           <input
             value={mediaUrl}
             onChange={e => handleMediaUrlChange(e.target.value)}
-            placeholder="Coller un lien média"
+            placeholder={t('post.pasteMediaUrl')}
             style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #1A4731', borderRadius: '8px', fontFamily: 'var(--font-alata)', fontSize: '14px', color: '#1A4731', outline: 'none' }}
           />
         )}
@@ -228,7 +230,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading || hasMedia}
-              title="Ajouter une image ou un GIF"
+              title={t('post.addImage')}
               style={{ background: 'none', border: 'none', cursor: isLoading || hasMedia ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: isLoading || hasMedia ? 0.4 : 1 }}
             >
               <ImagePlus size={20} />
@@ -236,7 +238,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
             <button
               onClick={() => setIsMediaUrlOpen(prev => !prev)}
               disabled={isLoading || mediaFile !== null}
-              title="Ajouter un média par URL"
+              title={t('post.addMediaUrl')}
               style={{ background: 'none', border: 'none', cursor: isLoading || mediaFile !== null ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: isLoading || mediaFile !== null ? 0.4 : 1 }}
             >
               <Link2 size={20} />
@@ -244,7 +246,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
             <button
               onClick={() => setIsGifPickerOpen(true)}
               disabled={isLoading || hasMedia}
-              title="Choisir un GIF Klipy"
+              title={t('post.pickGif')}
               style={{ background: 'none', border: 'none', cursor: isLoading || hasMedia ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: isLoading || hasMedia ? 0.4 : 1 }}
             >
               <Film size={20} />
@@ -261,7 +263,7 @@ export default function MobilePostModal({ isOpen, onClose, onPostCreated }: Mobi
               opacity: canPost ? 1 : 0.5,
             }}
           >
-            {isLoading ? '...' : 'Post'}
+            {isLoading ? '...' : t('post.publish')}
           </button>
         </div>
       </div>

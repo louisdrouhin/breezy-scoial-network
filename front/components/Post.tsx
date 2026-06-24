@@ -9,6 +9,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import GifPickerModal from '@/components/GifPickerModal';
 import RichPostText from '@/components/RichPostText';
 import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE, mediaItemFromUrl } from '@/lib/media';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PostProps {
   id?: string;
@@ -42,6 +43,7 @@ export default function Post({
   onDeleted,
 }: PostProps) {
   const { user } = useAuth();
+  const { language, t } = useLanguage();
   const [currentDeleted, setCurrentDeleted] = useState(deleted);
   const isOwner = user?.username === username && !currentDeleted;
 
@@ -113,12 +115,12 @@ export default function Post({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) return t('time.now');
+    if (diffMins < 60) return t('time.minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('time.hoursAgo', { count: diffHours });
+    if (diffDays < 7) return t('time.daysAgo', { count: diffDays });
 
-    return date.toLocaleDateString();
+    return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US');
   };
 
   const beginEdit = () => {
@@ -161,11 +163,11 @@ export default function Post({
     e.target.value = '';
     if (!file) return;
     if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-      setEditError('Format non supporté (jpeg, png, webp, gif uniquement)');
+      setEditError(t('post.unsupportedFormat'));
       return;
     }
     if (file.size > MAX_MEDIA_SIZE) {
-      setEditError('Fichier trop volumineux (10 Mo max)');
+      setEditError(t('post.fileTooLarge'));
       return;
     }
 
@@ -206,7 +208,7 @@ export default function Post({
   const handleEditSave = async () => {
     const nextMediaBeforeUpload = editRemoteMedia ? [editRemoteMedia] : [];
     if (editLoading || (!editText.trim() && !editMediaFile && nextMediaBeforeUpload.length === 0)) {
-      setEditError('Le contenu ou un média est requis');
+      setEditError(t('post.required'));
       return;
     }
     if (!editMediaFile && editText.trim() === currentContent && mediaEquals(nextMediaBeforeUpload, currentMedia)) {
@@ -231,7 +233,7 @@ export default function Post({
       setIsEdited(true);
       setIsEditing(false);
     } catch (e) {
-      setEditError(e instanceof Error ? e.message : 'Failed to update post');
+      setEditError(e instanceof Error ? e.message : t('post.updateFailed'));
     } finally {
       setEditLoading(false);
     }
@@ -278,9 +280,9 @@ export default function Post({
     >
       {showDeleteModal && (
         <ConfirmModal
-          title="Delete post"
-          message="This will remove the post content while keeping the thread structure."
-          confirmLabel="Delete"
+          title={t('post.deleteTitle')}
+          message={t('post.deleteMessage')}
+          confirmLabel={t('common.delete')}
           danger
           loading={deleteLoading}
           onConfirm={handleDelete}
@@ -319,7 +321,7 @@ export default function Post({
               </p>
             </Link>
             {isEdited && !currentDeleted && (
-              <span style={{ fontFamily: 'var(--font-alata)', color: '#999', fontSize: '11px' }}>· edited</span>
+              <span style={{ fontFamily: 'var(--font-alata)', color: '#999', fontSize: '11px' }}>· {t('post.edited')}</span>
             )}
           </div>
           <p style={{ margin: 0, fontFamily: 'var(--font-alata)', color: '#666', fontSize: '12px' }}>
@@ -331,14 +333,14 @@ export default function Post({
             <button
               onClick={beginEdit}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
-              title="Edit"
+              title={t('post.edit')}
             >
               <Pencil size={15} />
             </button>
             <button
               onClick={() => setShowDeleteModal(true)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
-              title="Delete"
+              title={t('common.delete')}
               onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
               onMouseLeave={e => (e.currentTarget.style.color = '#999')}
             >
@@ -351,7 +353,7 @@ export default function Post({
       {/* Post content */}
       {currentDeleted ? (
         <p style={{ fontFamily: 'var(--font-alata)', color: '#777', marginBottom: '16px', lineHeight: '1.5', fontStyle: 'italic' }}>
-          Breeze supprimé
+          {t('post.deleted')}
         </p>
       ) : isEditing ? (
         <div style={{ marginBottom: '16px' }}>
@@ -371,7 +373,7 @@ export default function Post({
               />
               <button
                 onClick={clearEditMedia}
-                title="Retirer"
+                title={t('post.removeMedia')}
                 style={{ position: 'absolute', top: '8px', right: '8px', width: '28px', height: '28px', borderRadius: '50%', border: 'none', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <X size={16} />
@@ -384,7 +386,7 @@ export default function Post({
               <input
                 value={editMediaUrl}
                 onChange={e => handleEditMediaUrlChange(e.target.value)}
-                placeholder="Coller un lien média"
+                placeholder={t('post.pasteMediaUrl')}
                 style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #1A4731', borderRadius: '6px', fontFamily: 'var(--font-alata)', fontSize: '13px', color: '#1A4731', outline: 'none' }}
               />
             </div>
@@ -408,7 +410,7 @@ export default function Post({
             <button
               onClick={() => editFileInputRef.current?.click()}
               disabled={editLoading || hasEditMedia}
-              title="Ajouter une image ou un GIF"
+              title={t('post.addImage')}
               style={{ background: 'none', border: 'none', cursor: editLoading || hasEditMedia ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: editLoading || hasEditMedia ? 0.4 : 1 }}
             >
               <ImagePlus size={18} />
@@ -416,7 +418,7 @@ export default function Post({
             <button
               onClick={() => setIsEditMediaUrlOpen(prev => !prev)}
               disabled={editLoading || hasEditMedia}
-              title="Ajouter un média par URL"
+              title={t('post.addMediaUrl')}
               style={{ background: 'none', border: 'none', cursor: editLoading || hasEditMedia ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: editLoading || hasEditMedia ? 0.4 : 1 }}
             >
               <Link2 size={18} />
@@ -424,7 +426,7 @@ export default function Post({
             <button
               onClick={() => setIsEditGifPickerOpen(true)}
               disabled={editLoading || hasEditMedia}
-              title="Choisir un GIF Klipy"
+              title={t('post.pickGif')}
               style={{ background: 'none', border: 'none', cursor: editLoading || hasEditMedia ? 'not-allowed' : 'pointer', color: '#1A4731', padding: '4px', display: 'flex', opacity: editLoading || hasEditMedia ? 0.4 : 1 }}
             >
               <Film size={18} />
@@ -436,14 +438,14 @@ export default function Post({
               onClick={cancelEdit}
               style={{ padding: '6px 14px', background: 'none', border: '1px solid #1A4731', borderRadius: '4px', fontFamily: 'var(--font-alata)', color: '#1A4731', cursor: 'pointer', fontSize: '13px' }}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleEditSave}
               disabled={!canSaveEdit}
               style={{ padding: '6px 14px', backgroundColor: '#1A4731', border: 'none', borderRadius: '4px', fontFamily: 'var(--font-alata)', color: 'white', cursor: !canSaveEdit ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: !canSaveEdit ? 0.6 : 1 }}
             >
-              {editLoading ? '...' : 'Save'}
+              {editLoading ? '...' : t('common.save')}
             </button>
           </div>
         </div>
@@ -561,7 +563,7 @@ export default function Post({
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               }}
             >
-              Copied!
+              {t('post.copy')}
             </div>
           )}
         </div>
