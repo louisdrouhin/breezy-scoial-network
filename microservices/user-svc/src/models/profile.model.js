@@ -12,6 +12,7 @@ const Profile = sequelize.define(
     notifLikes: { type: DataTypes.BOOLEAN, field: "notif_likes", defaultValue: true },
     notifMentions: { type: DataTypes.BOOLEAN, field: "notif_mentions", defaultValue: true },
     notifFollows: { type: DataTypes.BOOLEAN, field: "notif_follows", defaultValue: true },
+    language: { type: DataTypes.STRING(2), defaultValue: "en" },
   },
   {
     tableName: "profiles",

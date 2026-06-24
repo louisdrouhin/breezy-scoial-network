@@ -1,3 +1,5 @@
+import type { Language } from '@/lib/i18n';
+
 // En browser, on utilise l'origine courante (protocole+host+port) pour passer par le proxy Next.js
 // En SSR, on appelle Nginx directement via variable d'env ou fallback interne
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://nginx');
@@ -86,6 +88,7 @@ export interface Profile {
   notifLikes: boolean;
   notifMentions: boolean;
   notifFollows: boolean;
+  language?: Language;
   createdAt: string;
   updatedAt: string;
 }
@@ -350,7 +353,7 @@ export const userAPI = {
     return res.json();
   },
 
-  updateMe: async (data: { displayName?: string | null; bio?: string | null; notifLikes?: boolean; notifMentions?: boolean; notifFollows?: boolean }): Promise<Profile> => {
+  updateMe: async (data: { displayName?: string | null; bio?: string | null; notifLikes?: boolean; notifMentions?: boolean; notifFollows?: boolean; language?: Language }): Promise<Profile> => {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/users/me`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

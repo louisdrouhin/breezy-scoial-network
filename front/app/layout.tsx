@@ -3,6 +3,7 @@ import "./globals.css";
 
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { NotifProvider } from "@/contexts/NotifContext";
 
 const rubik = Rubik({
@@ -23,12 +24,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${rubik.variable} ${alata.variable}`}>
+    <html lang="en" className={`${rubik.variable} ${alata.variable}`}>
       <body>
         <AuthProvider>
-          <NotifProvider>
-            <LayoutWrapper>{children}</LayoutWrapper>
-          </NotifProvider>
+          <LanguageProvider>
+            <NotifProvider>
+              <LayoutWrapper>{children}</LayoutWrapper>
+            </NotifProvider>
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

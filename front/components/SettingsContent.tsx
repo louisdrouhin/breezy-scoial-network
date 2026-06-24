@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { userAPI, authAPI } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/contexts/LanguageContext';
+import type { Language } from '@/lib/i18n';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -36,6 +38,7 @@ const disabledInputStyle: React.CSSProperties = {
 
 export default function SettingsContent() {
   const { user } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
 
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -59,6 +62,11 @@ export default function SettingsContent() {
   const [notifLikes, setNotifLikes] = useState(true);
   const [notifMentions, setNotifMentions] = useState(true);
   const [notifFollows, setNotifFollows] = useState(true);
+  const [preferredLanguage, setPreferredLanguage] = useState<Language>(language);
+
+  useEffect(() => {
+    setPreferredLanguage(language);
+  }, [language]);
 
   useEffect(() => {
     if (!user?.username) return;
@@ -69,6 +77,10 @@ export default function SettingsContent() {
         setNotifLikes(p.notifLikes ?? true);
         setNotifMentions(p.notifMentions ?? true);
         setNotifFollows(p.notifFollows ?? true);
+        if (p.language) {
+          setPreferredLanguage(p.language);
+          setLanguage(p.language);
+        }
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
@@ -77,8 +89,8 @@ export default function SettingsContent() {
   const handleEmailSave = async () => {
     if (emailSaving) return;
     setEmailError('');
-    if (!email) { setEmailError('Please enter a new email'); return; }
-    if (!emailCurrentPassword) { setEmailError('Current password is required'); return; }
+    if (!email) { setEmailError(t('settings.enterNewEmail')); return; }
+    if (!emailCurrentPassword) { setEmailError(t('settings.currentPasswordRequired')); return; }
     setEmailSaving(true);
     setEmailStatus('idle');
     try {
@@ -87,7 +99,7 @@ export default function SettingsContent() {
       setEmailCurrentPassword('');
       setTimeout(() => setEmailStatus('idle'), 3000);
     } catch (e) {
-      setEmailError(e instanceof Error ? e.message : 'An error occurred');
+      setEmailError(e instanceof Error ? e.message : t('settings.saveError'));
       setEmailStatus('error');
     } finally {
       setEmailSaving(false);
@@ -97,10 +109,10 @@ export default function SettingsContent() {
   const handlePasswordSave = async () => {
     if (pwdSaving) return;
     setPwdError('');
-    if (!newPassword) { setPwdError('Please enter a new password'); return; }
-    if (newPassword.length < 8) { setPwdError('Password must be at least 8 characters'); return; }
-    if (newPassword !== confirmPassword) { setPwdError('Passwords do not match'); return; }
-    if (!pwdCurrentPassword) { setPwdError('Current password is required'); return; }
+    if (!newPassword) { setPwdError(t('settings.enterNewPassword')); return; }
+    if (newPassword.length < 8) { setPwdError(t('settings.passwordTooShort')); return; }
+    if (newPassword !== confirmPassword) { setPwdError(t('auth.passwordMismatch')); return; }
+    if (!pwdCurrentPassword) { setPwdError(t('settings.currentPasswordRequired')); return; }
     setPwdSaving(true);
     setPwdStatus('idle');
     try {
@@ -111,7 +123,7 @@ export default function SettingsContent() {
       setPwdCurrentPassword('');
       setTimeout(() => setPwdStatus('idle'), 3000);
     } catch (e) {
-      setPwdError(e instanceof Error ? e.message : 'An error occurred');
+      setPwdError(e instanceof Error ? e.message : t('settings.saveError'));
       setPwdStatus('error');
     } finally {
       setPwdSaving(false);
@@ -123,7 +135,8 @@ export default function SettingsContent() {
     setIsSaving(true);
     setSaveStatus('idle');
     try {
-      await userAPI.updateMe({ displayName: displayName || null, bio: bio || null, notifLikes, notifMentions, notifFollows });
+      await userAPI.updateMe({ displayName: displayName || null, bio: bio || null, notifLikes, notifMentions, notifFollows, language: preferredLanguage });
+      setLanguage(preferredLanguage);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch {
@@ -136,39 +149,39 @@ export default function SettingsContent() {
   return (
     <div style={{ padding: '32px' }}>
       <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 8px 0', fontSize: '28px' }}>Settings</h1>
-        <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0 }}>Manage your account and preferences</p>
+        <h1 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 8px 0', fontSize: '28px' }}>{t('settings.title')}</h1>
+        <p style={{ fontFamily: 'var(--font-alata)', color: '#666', margin: 0 }}>{t('settings.subtitle')}</p>
       </div>
 
       {/* Profil */}
       <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '24px', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>Profile</h2>
+        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>{t('settings.profile')}</h2>
 
         {isLoading ? (
-          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px' }}>Loading...</p>
+          <p style={{ fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px' }}>{t('common.loading')}</p>
         ) : (
           <>
-            <Field label="Display name">
+            <Field label={t('settings.displayName')}>
               <input
                 type="text"
                 value={displayName}
                 onChange={e => { if (e.target.value.length <= 50) setDisplayName(e.target.value); }}
-                placeholder="Your public name"
+                placeholder={t('settings.displayNamePlaceholder')}
                 maxLength={50}
                 style={inputStyle}
               />
               <p style={{ fontFamily: 'var(--font-alata)', color: '#999', fontSize: '12px', margin: '4px 0 0 0' }}>{displayName.length}/50</p>
             </Field>
 
-            <Field label="Username" note="Username is permanent and cannot be changed.">
+            <Field label={t('settings.username')} note={t('settings.usernameNote')}>
               <input type="text" value={user?.username ?? ''} disabled style={disabledInputStyle} />
             </Field>
 
-            <Field label="Bio">
+            <Field label={t('settings.bio')}>
               <textarea
                 value={bio}
                 onChange={e => { if (e.target.value.length <= 160) setBio(e.target.value); }}
-                placeholder="Tell us a bit about yourself..."
+                placeholder={t('settings.bioPlaceholder')}
                 maxLength={160}
                 style={{ ...inputStyle, resize: 'none', minHeight: '80px' }}
               />
@@ -180,74 +193,93 @@ export default function SettingsContent() {
 
       {/* Changer l'email */}
       <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '24px', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>Change email</h2>
+        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>{t('settings.emailTitle')}</h2>
 
-        <Field label="New email">
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="new@address.com" style={inputStyle} />
+        <Field label={t('settings.newEmail')}>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('settings.newEmailPlaceholder')} style={inputStyle} />
         </Field>
-        <Field label="Current password" note="Required to confirm the change.">
-          <input type="password" value={emailCurrentPassword} onChange={e => setEmailCurrentPassword(e.target.value)} placeholder="Your current password" style={inputStyle} />
+        <Field label={t('settings.currentPassword')} note={t('settings.currentPasswordNote')}>
+          <input type="password" value={emailCurrentPassword} onChange={e => setEmailCurrentPassword(e.target.value)} placeholder={t('settings.currentPasswordPlaceholder')} style={inputStyle} />
         </Field>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button onClick={handleEmailSave} disabled={emailSaving} style={{ padding: '10px 24px', backgroundColor: '#1A4731', color: 'white', border: 'none', borderRadius: '6px', fontFamily: 'var(--font-rubik)', fontSize: '15px', fontWeight: 'bold', cursor: emailSaving ? 'not-allowed' : 'pointer', opacity: emailSaving ? 0.6 : 1 }}>
-            {emailSaving ? 'Saving...' : 'Update'}
+            {emailSaving ? t('common.saving') : t('common.update')}
           </button>
-          {emailStatus === 'success' && <span style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '14px' }}>✓ Email updated</span>}
+          {emailStatus === 'success' && <span style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '14px' }}>✓ {t('settings.emailUpdated')}</span>}
           {emailError && <span style={{ fontFamily: 'var(--font-alata)', color: '#dc2626', fontSize: '14px' }}>{emailError}</span>}
         </div>
       </div>
 
       {/* Changer le mot de passe */}
       <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '24px', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>Change password</h2>
+        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>{t('settings.passwordTitle')}</h2>
 
-        <Field label="Current password">
-          <input type="password" value={pwdCurrentPassword} onChange={e => setPwdCurrentPassword(e.target.value)} placeholder="Your current password" style={inputStyle} />
+        <Field label={t('settings.currentPassword')}>
+          <input type="password" value={pwdCurrentPassword} onChange={e => setPwdCurrentPassword(e.target.value)} placeholder={t('settings.currentPasswordPlaceholder')} style={inputStyle} />
         </Field>
-        <Field label="New password">
-          <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 8 characters" style={inputStyle} />
+        <Field label={t('settings.newPassword')}>
+          <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={t('settings.newPasswordPlaceholder')} style={inputStyle} />
         </Field>
-        <Field label="Confirm new password">
-          <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repeat your new password" style={inputStyle} />
+        <Field label={t('settings.confirmPassword')}>
+          <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder={t('settings.confirmPasswordPlaceholder')} style={inputStyle} />
         </Field>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button onClick={handlePasswordSave} disabled={pwdSaving} style={{ padding: '10px 24px', backgroundColor: '#1A4731', color: 'white', border: 'none', borderRadius: '6px', fontFamily: 'var(--font-rubik)', fontSize: '15px', fontWeight: 'bold', cursor: pwdSaving ? 'not-allowed' : 'pointer', opacity: pwdSaving ? 0.6 : 1 }}>
-            {pwdSaving ? 'Saving...' : 'Update'}
+            {pwdSaving ? t('common.saving') : t('common.update')}
           </button>
-          {pwdStatus === 'success' && <span style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '14px' }}>✓ Password updated</span>}
+          {pwdStatus === 'success' && <span style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '14px' }}>✓ {t('settings.passwordUpdated')}</span>}
           {pwdError && <span style={{ fontFamily: 'var(--font-alata)', color: '#dc2626', fontSize: '14px' }}>{pwdError}</span>}
         </div>
       </div>
 
       {/* Notifications */}
       <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '24px', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>Notifications</h2>
+        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>{t('settings.notifications')}</h2>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #F4F5F4' }}>
           <div>
-            <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 4px 0', fontSize: '14px' }}>Likes</p>
-            <p style={{ fontFamily: 'var(--font-alata)', color: '#999', margin: 0, fontSize: '12px' }}>Get notified when someone likes your post</p>
+            <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 4px 0', fontSize: '14px' }}>{t('settings.likes')}</p>
+            <p style={{ fontFamily: 'var(--font-alata)', color: '#999', margin: 0, fontSize: '12px' }}>{t('settings.likesNote')}</p>
           </div>
           <Toggle checked={notifLikes} onChange={setNotifLikes} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #F4F5F4' }}>
           <div>
-            <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 4px 0', fontSize: '14px' }}>Mentions</p>
-            <p style={{ fontFamily: 'var(--font-alata)', color: '#999', margin: 0, fontSize: '12px' }}>Get notified when someone mentions you</p>
+            <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 4px 0', fontSize: '14px' }}>{t('settings.mentions')}</p>
+            <p style={{ fontFamily: 'var(--font-alata)', color: '#999', margin: 0, fontSize: '12px' }}>{t('settings.mentionsNote')}</p>
           </div>
           <Toggle checked={notifMentions} onChange={setNotifMentions} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 4px 0', fontSize: '14px' }}>Follows</p>
-            <p style={{ fontFamily: 'var(--font-alata)', color: '#999', margin: 0, fontSize: '12px' }}>Get notified when someone follows you</p>
+            <p style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 4px 0', fontSize: '14px' }}>{t('settings.follows')}</p>
+            <p style={{ fontFamily: 'var(--font-alata)', color: '#999', margin: 0, fontSize: '12px' }}>{t('settings.followsNote')}</p>
           </div>
           <Toggle checked={notifFollows} onChange={setNotifFollows} />
         </div>
+      </div>
+
+      {/* Language */}
+      <div style={{ backgroundColor: '#ffffff', border: '1px solid #1A4731', borderRadius: '8px', padding: '24px', marginBottom: '24px' }}>
+        <h2 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 20px 0', fontSize: '20px' }}>{t('settings.language')}</h2>
+        <Field label={t('settings.language')} note={t('settings.languageNote')}>
+          <select
+            value={preferredLanguage}
+            onChange={e => {
+              const next = e.target.value as Language;
+              setPreferredLanguage(next);
+              setLanguage(next);
+            }}
+            style={inputStyle}
+          >
+            <option value="en">{t('settings.english')}</option>
+            <option value="fr">{t('settings.french')}</option>
+          </select>
+        </Field>
       </div>
 
       {/* Save */}
@@ -261,14 +293,14 @@ export default function SettingsContent() {
             cursor: isSaving || isLoading ? 'not-allowed' : 'pointer', opacity: isSaving || isLoading ? 0.6 : 1,
           }}
         >
-          {isSaving ? 'Saving...' : 'Save'}
+          {isSaving ? t('common.saving') : t('common.save')}
         </button>
 
         {saveStatus === 'success' && (
-          <span style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '14px' }}>✓ Changes saved</span>
+          <span style={{ fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '14px' }}>✓ {t('settings.saved')}</span>
         )}
         {saveStatus === 'error' && (
-          <span style={{ fontFamily: 'var(--font-alata)', color: '#dc2626', fontSize: '14px' }}>Error saving changes</span>
+          <span style={{ fontFamily: 'var(--font-alata)', color: '#dc2626', fontSize: '14px' }}>{t('settings.saveError')}</span>
         )}
       </div>
     </div>

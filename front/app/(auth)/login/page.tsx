@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { validateRegister } from '@/lib/validation';
 
 export default function Login() {
   const router = useRouter();
   const { login, register, isLoading, error, isAuthenticated, isInitialized } = useAuth();
+  const { t } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,7 +44,7 @@ export default function Login() {
         return;
       }
       if (password !== confirmPassword) {
-        setLocalError('Passwords do not match');
+        setLocalError(t('auth.passwordMismatch'));
         return;
       }
       const success = await register({ username, displayName: displayName.trim(), email, password });
@@ -95,7 +97,7 @@ export default function Login() {
             fontSize: '28px',
           }}
         >
-          {isLogin ? 'Login' : 'Sign Up'}
+          {isLogin ? t('auth.login') : t('auth.signup')}
         </h1>
 
         <p
@@ -107,7 +109,7 @@ export default function Login() {
             fontSize: '14px',
           }}
         >
-          {isLogin ? 'Welcome back!' : 'Join our community!'}
+          {isLogin ? t('auth.welcome') : t('auth.join')}
         </p>
 
         {/* Error Message */}
@@ -148,13 +150,13 @@ export default function Login() {
                   fontSize: '14px',
                 }}
               >
-                Username
+                {t('auth.username')}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder={t('auth.usernamePlaceholder')}
                 required
                 style={{
                   width: '100%',
@@ -181,13 +183,13 @@ export default function Login() {
                   fontSize: '14px',
                 }}
               >
-                Display Name
+                {t('auth.displayName')}
               </label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter your display name"
+                placeholder={t('auth.displayNamePlaceholder')}
                 required
                 style={{
                   width: '100%',
@@ -213,13 +215,13 @@ export default function Login() {
                 fontSize: '14px',
               }}
             >
-              Email
+              {t('auth.email')}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              placeholder={t('auth.emailPlaceholder')}
               required
               style={{
                 width: '100%',
@@ -244,13 +246,13 @@ export default function Login() {
                 fontSize: '14px',
               }}
             >
-              Password
+              {t('auth.password')}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t('auth.passwordPlaceholder')}
               required
               style={{
                 width: '100%',
@@ -276,13 +278,13 @@ export default function Login() {
                   fontSize: '14px',
                 }}
               >
-                Confirm Password
+                {t('auth.confirmPassword')}
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
+                placeholder={t('auth.confirmPasswordPlaceholder')}
                 required
                 style={{
                   width: '100%',
@@ -315,7 +317,7 @@ export default function Login() {
               marginTop: '8px',
             }}
           >
-            {isLoading ? 'Processing...' : isLogin ? 'Login' : 'Sign Up'}
+            {isLoading ? t('auth.processing') : isLogin ? t('auth.login') : t('auth.signup')}
           </button>
         </form>
 
@@ -329,7 +331,7 @@ export default function Login() {
             fontSize: '14px',
           }}
         >
-          {isLogin ? "Don't have an account? " : 'Already have an account? '}
+          {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
           <button
             onClick={() => {
               setIsLogin(!isLogin);
@@ -345,7 +347,7 @@ export default function Login() {
               fontSize: '14px',
             }}
           >
-            {isLogin ? 'Sign Up' : 'Login'}
+            {isLogin ? t('auth.signup') : t('auth.login')}
           </button>
         </p>
       </div>

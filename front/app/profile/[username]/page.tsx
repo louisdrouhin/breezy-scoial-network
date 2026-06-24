@@ -7,6 +7,7 @@ import ProfileHeader from '@/components/ProfileHeader';
 import Post from '@/components/Post';
 import { userAPI, postAPI, Profile, Post as PostType, FollowEntry, FollowerEntry } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -32,6 +33,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const { t } = useLanguage();
 
   // Récupère le statut « liké » des posts donnés et l'ajoute au set existant.
   const hydrateLikes = useCallback(async (list: PostType[]) => {
@@ -67,7 +69,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           setIsFollowing(myFollowing.some(f => f['followed.username'] === username));
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'An error occurred');
+        setError(e instanceof Error ? e.message : t('settings.saveError'));
       } finally {
         setIsLoading(false);
       }
@@ -157,11 +159,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   };
 
   if (isLoading) {
-    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)' }}>Loading...</div>;
+    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)' }}>{t('common.loading')}</div>;
   }
 
   if (error || !profile) {
-    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)', color: '#999' }}>Profile not found</div>;
+    return <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-alata)', color: '#999' }}>{t('profile.notFound')}</div>;
   }
 
   return (
@@ -206,14 +208,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   color: activeTab === tab ? '#1A4731' : '#999',
                 }}
               >
-                {tab === 'posts' ? 'Posts' : 'Réponses'}
+                {tab === 'posts' ? t('profile.posts') : t('profile.replies')}
               </button>
             ))}
           </div>
 
           {posts.length === 0 && !isLoadingMore ? (
             <p style={{ fontFamily: 'var(--font-alata)', color: '#999', textAlign: 'center', padding: '40px' }}>
-              {activeTab === 'posts' ? 'No posts yet' : 'No replies yet'}
+              {activeTab === 'posts' ? t('profile.noPosts') : t('profile.noReplies')}
             </p>
           ) : (
             posts.map(post => (
@@ -238,13 +240,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
           {isLoadingMore && (
             <div style={{ textAlign: 'center', padding: '20px', fontFamily: 'var(--font-alata)', color: '#999' }}>
-              Loading...
+              {t('common.loading')}
             </div>
           )}
 
           {!hasMore && posts.length > 0 && (
             <div style={{ textAlign: 'center', padding: '24px', fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px', borderTop: '1px solid #E0E0E0', marginTop: '8px' }}>
-              All posts loaded
+              {t('profile.allLoaded')}
             </div>
           )}
 

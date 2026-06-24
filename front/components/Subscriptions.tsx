@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { userAPI } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FollowingUser {
   username: string;
@@ -12,6 +13,7 @@ interface FollowingUser {
 
 export default function Subscriptions() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [following, setFollowing] = useState<FollowingUser[]>([]);
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function Subscriptions() {
           fontSize: '18px',
         }}
       >
-        Following
+        {t('profile.following')}
       </h3>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

@@ -2,6 +2,7 @@
 
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NotificationProps {
   id: string;
@@ -16,28 +17,29 @@ interface NotificationProps {
 }
 
 const TYPE_CONFIG = {
-  LIKE:         { emoji: '❤️', label: 'liked your post' },
-  COMMENT:      { emoji: '💬', label: 'commented on your post' },
-  NEW_FOLLOWER: { emoji: '👤', label: 'started following you' },
-  MENTION:      { emoji: '🔔', label: 'mentioned you' },
+  LIKE:         { emoji: '❤️', labelKey: 'notifications.like' },
+  COMMENT:      { emoji: '💬', labelKey: 'notifications.comment' },
+  NEW_FOLLOWER: { emoji: '👤', labelKey: 'notifications.follow' },
+  MENTION:      { emoji: '🔔', labelKey: 'notifications.mention' },
 };
 
-function formatDate(dateString: string) {
+function formatDate(dateString: string, t: (key: string, vars?: Record<string, string | number>) => string, locale: string) {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 1) return 'just now';
+  if (diffMins < 1) return t('time.justNow');
   if (diffMins < 60) return `${diffMins}m`;
   if (diffHours < 24) return `${diffHours}h`;
   if (diffDays < 7) return `${diffDays}d`;
-  return date.toLocaleDateString('en-US');
+  return date.toLocaleDateString(locale);
 }
 
 export default function Notification({ id, type, recipientUsername, actorUsername, relatedPostId, read, createdAt, onMarkAsRead, onDelete }: NotificationProps) {
   const router = useRouter();
+  const { language, t } = useLanguage();
   const config = TYPE_CONFIG[type];
   const relatedPostOwner = type === 'MENTION' ? actorUsername : recipientUsername;
 
@@ -81,10 +83,10 @@ export default function Notification({ id, type, recipientUsername, actorUsernam
           {actorUsername ? (
             <span style={{ fontFamily: 'var(--font-rubik)', fontWeight: 'bold', color: '#1A4731' }}>@{actorUsername} </span>
           ) : null}
-          <span>{config.label}</span>
+          <span>{t(config.labelKey)}</span>
         </p>
         <p style={{ margin: 0, fontFamily: 'var(--font-alata)', color: '#999', fontSize: '12px' }}>
-          {formatDate(createdAt)}
+          {formatDate(createdAt, t, language === 'fr' ? 'fr-FR' : 'en-US')}
         </p>
       </div>
 
@@ -93,7 +95,7 @@ export default function Notification({ id, type, recipientUsername, actorUsernam
         {!read && (
           <button
             onClick={() => onMarkAsRead(id)}
-            title="Marquer comme lu"
+            title={t('notifications.markRead')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}
           >
             <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#1A4731' }} />
@@ -104,7 +106,7 @@ export default function Notification({ id, type, recipientUsername, actorUsernam
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999', display: 'flex' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
           onMouseLeave={e => (e.currentTarget.style.color = '#999')}
-          title="Delete"
+          title={t('common.delete')}
         >
           <Trash2 size={16} />
         </button>

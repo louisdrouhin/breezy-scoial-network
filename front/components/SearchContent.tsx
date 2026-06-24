@@ -6,6 +6,7 @@ import { Search } from 'lucide-react';
 import Post from '@/components/Post';
 import { postAPI, Post as PostType, userAPI } from '@/lib/api';
 import { useProfileCache } from '@/hooks/useProfileCache';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SearchResult {
   username: string;
@@ -28,6 +29,7 @@ export default function SearchContent({ initialTag = '' }: SearchContentProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { cache: profileCache, loadProfiles } = useProfileCache();
+  const { t } = useLanguage();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -92,7 +94,7 @@ export default function SearchContent({ initialTag = '' }: SearchContentProps) {
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F4F5F4', paddingBottom: '80px' }} className="search-container">
       <div style={{ flex: 1, padding: '20px' }} className="search-inner">
         <h1 style={{ fontFamily: 'var(--font-rubik)', color: '#1A4731', margin: '0 0 16px 0', fontSize: '28px' }}>
-          Search
+          {t('search.title')}
         </h1>
 
         <div style={{ backgroundColor: '#ffffff', border: '2px solid #1A4731', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
@@ -102,7 +104,7 @@ export default function SearchContent({ initialTag = '' }: SearchContentProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search for a user or #tag..."
+            placeholder={t('search.placeholder')}
             style={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'var(--font-alata)', color: '#1A4731', fontSize: '16px', backgroundColor: 'transparent' }}
           />
           {isLoading && (
@@ -112,13 +114,13 @@ export default function SearchContent({ initialTag = '' }: SearchContentProps) {
 
         {!searched && !isLoading && (
           <p style={{ textAlign: 'center', paddingTop: '60px', fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px' }}>
-            Start typing to search
+            {t('search.start')}
           </p>
         )}
 
         {searched && results.length === 0 && postResults.length === 0 && !isLoading && (
           <p style={{ textAlign: 'center', paddingTop: '40px', fontFamily: 'var(--font-alata)', color: '#999', fontSize: '14px' }}>
-            No results found for &quot;{query}&quot;
+            {t('search.none', { query })}
           </p>
         )}
 
