@@ -109,8 +109,12 @@ services:
       MONGODB_URI: mongodb://${POST_MONGO_USERNAME}:${POST_MONGO_PASSWORD}@post-mongo:27017/post_svc?authSource=admin
       PORT: 3003
       NODE_ENV: production
+      UPLOADS_DIR: /uploads
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       NOTIF_SVC_URL: ${NOTIF_SVC_URL}
+      KLIPY_API_KEY: ${KLIPY_API_KEY}
+    volumes:
+      - uploads:/uploads
     depends_on:
       post-mongo:
         condition: service_healthy

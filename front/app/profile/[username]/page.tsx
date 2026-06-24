@@ -224,11 +224,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 displayName={profile.displayName || profile.username}
                 avatarUrl={profile.avatarUrl}
                 content={post.content}
+                media={post.media}
                 createdAt={new Date(post.created_at)}
                 initialLikes={post.likeCount}
                 initialComments={post.replyCount}
                 edited={post.edited}
+                deleted={post.deleted}
                 initialIsLiked={likedPostIds.has(post._id)}
+                onDeleted={(deletedId) => setPosts(prev => prev.filter(p => p._id !== deletedId))}
               />
             ))
           )}

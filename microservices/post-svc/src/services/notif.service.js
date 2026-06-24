@@ -26,10 +26,16 @@ export async function notifyComment(parentAuthor, actorUsername, parentPostId) {
   await sendNotif('COMMENT', parentAuthor, actorUsername, parentPostId)
 }
 
-export async function notifyMentions(content, actorUsername, postId) {
-  const mentioned = [...new Set(content.match(/@(\w+)/g)?.map(m => m.slice(1)) ?? [])]
+export function extractMentionUsernames(content) {
+  return [...new Set(content.match(/@(\w+)/g)?.map(m => m.slice(1)) ?? [])]
+}
+
+export async function notifyMentions(content, actorUsername, postId, excludedUsernames = []) {
+  const excluded = new Set(excludedUsernames)
+  const mentioned = extractMentionUsernames(content)
   for (const username of mentioned) {
     if (username === actorUsername) continue
+    if (excluded.has(username)) continue
     await sendNotif('MENTION', username, actorUsername, postId)
   }
 }

@@ -118,6 +118,9 @@ importers:
       mongoose:
         specifier: ^9.7.1
         version: 9.7.1
+      multer:
+        specifier: ^2.2.0
+        version: 2.2.0
     devDependencies:
       '@types/node':
         specifier: ^25.9.2

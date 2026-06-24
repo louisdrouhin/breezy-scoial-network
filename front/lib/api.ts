@@ -51,15 +51,28 @@ export interface RegisterResponse { username: string; email: string; role: strin
 export interface LoginResponse { username: string; email: string; role: string }
 export interface RefreshResponse { message: string }
 
+export interface MediaItem {
+  url: string;
+  type: 'image' | 'gif';
+}
+
+export interface GifItem {
+  id: string;
+  preview: string;
+  url: string;
+}
+
 export interface Post {
   _id: string;
   authorUsername: string;
   content: string;
+  media?: MediaItem[];
   tags: string[];
   parent: string | null;
   likeCount: number;
   replyCount: number;
   edited: boolean;
+  deleted: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -71,6 +84,7 @@ export interface Profile {
   avatarUrl: string | null;
   bannerUrl: string | null;
   notifLikes: boolean;
+  notifMentions: boolean;
   notifFollows: boolean;
   createdAt: string;
   updatedAt: string;
@@ -175,15 +189,37 @@ export const authAPI = {
 // ----------------------------------------------------------------
 
 export const postAPI = {
-  create: async (content: string, tags?: string[], parentId?: string): Promise<Post> => {
+  create: async (content: string, tags?: string[], parentId?: string, media?: MediaItem[]): Promise<Post> => {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, tags, parentId }),
+      body: JSON.stringify({ content, tags, parentId, media }),
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to create post') }
     const data = await res.json();
     return data.post;
+  },
+
+  // Recherche de GIF via le proxy Klipy de post-svc (sans query -> tendances).
+  searchGifs: async (q: string, pos?: string): Promise<{ results: GifItem[]; next: string | null }> => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (pos) params.set('pos', pos);
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/gifs?${params}`);
+    if (!res.ok) return { results: [], next: null };
+    return res.json();
+  },
+
+  // Upload d'un média (image / GIF) attaché ensuite à un post via create().
+  uploadMedia: async (file: File): Promise<MediaItem> => {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/media`, {
+      method: 'POST',
+      body: form,
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to upload media') }
+    return res.json();
   },
 
   getById: async (id: string): Promise<Post> => {
@@ -213,11 +249,11 @@ export const postAPI = {
     return res.json();
   },
 
-  update: async (id: string, content: string): Promise<Post> => {
+  update: async (id: string, content: string, media?: MediaItem[]): Promise<Post> => {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify(media === undefined ? { content } : { content, media }),
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to update post') }
     const data = await res.json();
@@ -248,7 +284,7 @@ export const postAPI = {
   },
 
   getByTag: async (tag: string, page = 1, limit = 20): Promise<Post[]> => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/tags/${tag}?page=${page}&limit=${limit}`);
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/posts/tags/${encodeURIComponent(tag)}?page=${page}&limit=${limit}`);
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to fetch posts') }
     return res.json();
   },
@@ -314,7 +350,7 @@ export const userAPI = {
     return res.json();
   },
 
-  updateMe: async (data: { displayName?: string | null; bio?: string | null; notifLikes?: boolean; notifFollows?: boolean }): Promise<Profile> => {
+  updateMe: async (data: { displayName?: string | null; bio?: string | null; notifLikes?: boolean; notifMentions?: boolean; notifFollows?: boolean }): Promise<Profile> => {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/users/me`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

@@ -139,10 +139,13 @@ services:
     environment:
       MONGODB_URI: mongodb://${POST_MONGO_USERNAME}:${POST_MONGO_PASSWORD}@post-mongo:27017/post_svc?authSource=admin
       PORT: 3003
+      UPLOADS_DIR: /uploads
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       NOTIF_SVC_URL: ${NOTIF_SVC_URL}
+      KLIPY_API_KEY: ${KLIPY_API_KEY}
     volumes:
       - ./microservices/post-svc/src:/usr/src/app/microservices/post-svc/src
+      - uploads:/uploads
     command: pnpm dev
     depends_on:
       post-mongo:

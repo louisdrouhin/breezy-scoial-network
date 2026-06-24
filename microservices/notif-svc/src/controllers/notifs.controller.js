@@ -82,7 +82,7 @@ export const createNotif = async (req, res) => {
 
     // Check recipient notification preferences before creating
     const userSvcUrl = process.env.USER_SVC_URL
-    if (userSvcUrl && (type === 'LIKE' || type === 'NEW_FOLLOWER')) {
+    if (userSvcUrl && (type === 'LIKE' || type === 'MENTION' || type === 'NEW_FOLLOWER')) {
         try {
             const prefsRes = await fetch(`${userSvcUrl}/internal/users/${recipientUsername}/notif-prefs`, {
                 headers: { 'x-internal-secret': process.env.INTERNAL_SECRET },
@@ -90,6 +90,7 @@ export const createNotif = async (req, res) => {
             if (prefsRes.ok) {
                 const prefs = await prefsRes.json()
                 if (type === 'LIKE' && !prefs.notifLikes) return res.status(200).json({ skipped: true })
+                if (type === 'MENTION' && !prefs.notifMentions) return res.status(200).json({ skipped: true })
                 if (type === 'NEW_FOLLOWER' && !prefs.notifFollows) return res.status(200).json({ skipped: true })
             }
         } catch {

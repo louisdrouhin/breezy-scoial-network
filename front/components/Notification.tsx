@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 interface NotificationProps {
   id: string;
   type: 'LIKE' | 'COMMENT' | 'NEW_FOLLOWER' | 'MENTION';
+  recipientUsername: string;
   actorUsername: string | null;
   relatedPostId: string | null;
   read: boolean;
@@ -35,12 +36,13 @@ function formatDate(dateString: string) {
   return date.toLocaleDateString('en-US');
 }
 
-export default function Notification({ id, type, actorUsername, relatedPostId, read, createdAt, onMarkAsRead, onDelete }: NotificationProps) {
+export default function Notification({ id, type, recipientUsername, actorUsername, relatedPostId, read, createdAt, onMarkAsRead, onDelete }: NotificationProps) {
   const router = useRouter();
   const config = TYPE_CONFIG[type];
+  const relatedPostOwner = type === 'MENTION' ? actorUsername : recipientUsername;
 
-  const href = relatedPostId && actorUsername
-    ? `/${actorUsername}/status/${relatedPostId}`
+  const href = relatedPostId && relatedPostOwner
+    ? `/${relatedPostOwner}/status/${relatedPostId}`
     : actorUsername && type === 'NEW_FOLLOWER'
     ? `/profile/${actorUsername}`
     : null;
