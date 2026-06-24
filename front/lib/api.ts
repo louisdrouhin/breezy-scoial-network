@@ -45,7 +45,7 @@ async function fetchWithAuth(input: string, init?: RequestInit): Promise<Respons
 // Types
 // ----------------------------------------------------------------
 
-export interface RegisterPayload { username: string; email: string; password: string }
+export interface RegisterPayload { username: string; displayName: string; email: string; password: string }
 export interface LoginPayload { email: string; password: string }
 export interface RegisterResponse { username: string; email: string; role: string }
 export interface LoginResponse { username: string; email: string; role: string }

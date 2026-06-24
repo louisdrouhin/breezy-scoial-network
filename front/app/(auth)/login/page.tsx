@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import { validateRegister } from '@/lib/validation';
 
 export default function Login() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -34,17 +36,23 @@ export default function Login() {
         setTimeout(() => router.push('/'), 100);
       }
     } else {
+      const validationError = validateRegister({ username, displayName, email });
+      if (validationError) {
+        setLocalError(validationError);
+        return;
+      }
       if (password !== confirmPassword) {
         setLocalError('Passwords do not match');
         return;
       }
-      const success = await register({ username, email, password });
+      const success = await register({ username, displayName: displayName.trim(), email, password });
       if (success) {
         setLocalError(null);
         setIsLogin(true);
         setEmail('');
         setPassword('');
         setUsername('');
+        setDisplayName('');
         setConfirmPassword('');
       }
     }
@@ -147,6 +155,39 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #1A4731',
+                  borderRadius: '6px',
+                  fontFamily: 'var(--font-alata)',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+              />
+            </div>
+          )}
+
+          {!isLogin && (
+            <div>
+              <label
+                style={{
+                  fontFamily: 'var(--font-alata)',
+                  color: '#1A4731',
+                  display: 'block',
+                  marginBottom: '6px',
+                  fontSize: '14px',
+                }}
+              >
+                Display Name
+              </label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Enter your display name"
                 required
                 style={{
                   width: '100%',

@@ -3,9 +3,24 @@ import { generateToken } from '../utils/jwt.util.js';
 import { Account, RefreshToken } from '../models/index.js';
 import crypto from 'crypto';
 
-async function register(username, email, password) {
-  if (!username || !email || !password) {
-    throw new Error('Username, email and password are required');
+// Règles de format dupliquées côté front (lib/validation.ts) — le back fait foi.
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function register(username, email, password, displayName) {
+  if (!username || !email || !password || !displayName) {
+    throw new Error('Username, display name, email and password are required');
+  }
+
+  if (!USERNAME_RE.test(username)) {
+    throw new Error('Username must be 3-30 characters (letters, digits and underscore only)');
+  }
+  const trimmedDisplayName = displayName.trim();
+  if (trimmedDisplayName.length < 1 || trimmedDisplayName.length > 50) {
+    throw new Error('Display name must be between 1 and 50 characters');
+  }
+  if (email.length > 255 || !EMAIL_RE.test(email)) {
+    throw new Error('Invalid email address');
   }
 
   const existingByUsername = await Account.findByPk(username);
@@ -37,7 +52,7 @@ async function register(username, email, password) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username,
-        displayName: null,
+        displayName: trimmedDisplayName,
         bio: null,
         avatarUrl: null,
         bannerUrl: null,

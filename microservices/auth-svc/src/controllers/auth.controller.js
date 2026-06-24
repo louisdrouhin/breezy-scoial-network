@@ -3,8 +3,8 @@ import { verifyToken } from '../utils/jwt.util.js';
 
 async function register(req, res) {
   try {
-    const { username, email, password } = req.body;
-    const result = await authService.register(username, email, password);
+    const { username, displayName, email, password } = req.body;
+    const result = await authService.register(username, email, password, displayName);
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
