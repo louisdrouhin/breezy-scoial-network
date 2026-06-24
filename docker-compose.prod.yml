@@ -1,0 +1,221 @@
+name: breezy
+
+services:
+  # ============================================================
+  # AUTH SERVICE STACK
+  # ============================================================
+  auth-postgres:
+    image: postgres:16-alpine
+    container_name: auth-postgres
+    environment:
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+      POSTGRES_DB: auth_svc
+    volumes:
+      - auth-svc-db:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-svc:
+    image: ghcr.io/louisdrouhin/breezy-auth-svc:latest
+    container_name: auth-svc
+    pull_policy: always
+    environment:
+      DATABASE_URL: postgresql://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@auth-postgres:5432/auth_svc
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      NODE_ENV: production
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: always
+
+  # ============================================================
+  # USER SERVICE STACK
+  # ============================================================
+  user-postgres:
+    image: postgres:16-alpine
+    container_name: user-postgres
+    environment:
+      POSTGRES_USER: ${USER_DB_USER}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+      POSTGRES_DB: user_svc
+    volumes:
+      - user-svc-db:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-svc:
+    image: ghcr.io/louisdrouhin/breezy-user-svc:latest
+    container_name: user-svc
+    pull_policy: always
+    environment:
+      DATABASE_URL: postgresql://${USER_DB_USER}:${USER_DB_PASSWORD}@user-postgres:5432/user_svc
+      PORT: 3002
+      NODE_ENV: production
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NOTIF_SVC_URL: ${NOTIF_SVC_URL}
+      UPLOADS_DIR: /uploads
+    volumes:
+      - uploads:/uploads
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: always
+
+  # ============================================================
+  # POST SERVICE STACK
+  # ============================================================
+  post-mongo:
+    image: mongo:7
+    container_name: post-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${POST_MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${POST_MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: post_svc
+    volumes:
+      - post-svc-db:/data/db
+    networks:
+      - backend
+    restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  post-svc:
+    image: ghcr.io/louisdrouhin/breezy-post-svc:latest
+    container_name: post-svc
+    pull_policy: always
+    environment:
+      MONGODB_URI: mongodb://${POST_MONGO_USERNAME}:${POST_MONGO_PASSWORD}@post-mongo:27017/post_svc?authSource=admin
+      PORT: 3003
+      NODE_ENV: production
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      NOTIF_SVC_URL: ${NOTIF_SVC_URL}
+    depends_on:
+      post-mongo:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: always
+
+  # ============================================================
+  # NOTIFICATION SERVICE STACK
+  # ============================================================
+  notif-mongo:
+    image: mongo:7
+    container_name: notif-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${NOTIF_MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${NOTIF_MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: notif_svc
+    volumes:
+      - notif-svc-db:/data/db
+    networks:
+      - backend
+    restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notif-svc:
+    image: ghcr.io/louisdrouhin/breezy-notif-svc:latest
+    container_name: notif-svc
+    pull_policy: always
+    environment:
+      MONGODB_URI: mongodb://${NOTIF_MONGO_USERNAME}:${NOTIF_MONGO_PASSWORD}@notif-mongo:27017/notif_svc?authSource=admin
+      PORT: 3004
+      NODE_ENV: production
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SVC_URL: ${USER_SVC_URL}
+    depends_on:
+      notif-mongo:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: always
+
+  # ============================================================
+  # FEED SERVICE (no DB)
+  # ============================================================
+  feed-svc:
+    image: ghcr.io/louisdrouhin/breezy-feed-svc:latest
+    container_name: feed-svc
+    pull_policy: always
+    environment:
+      PORT: 3005
+      NODE_ENV: production
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SVC_URL: ${USER_SVC_URL}
+      POST_SVC_URL: ${POST_SVC_URL}
+    networks:
+      - backend
+    restart: always
+
+  # ============================================================
+  # FRONTEND
+  # ============================================================
+  frontend:
+    image: ghcr.io/louisdrouhin/breezy-frontend:latest
+    container_name: frontend
+    pull_policy: always
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NGINX_URL: ${NGINX_URL}
+      # pnpm fait un check de deps au démarrage qui veut purger node_modules ;
+      # sans TTY (conteneur) il s'interrompt. CI=true le rend non-interactif.
+      CI: "true"
+    networks:
+      - frontend
+    restart: always
+
+  # ============================================================
+  # NGINX GATEWAY
+  # ============================================================
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - uploads:/uploads:ro
+    networks:
+      - backend
+      - frontend
+    restart: always
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+
+volumes:
+  auth-svc-db:
+  user-svc-db:
+  post-svc-db:
+  notif-svc-db:
+  # Fichiers uploadés (avatars, bannières) : écrits par user-svc, servis par Nginx
+  uploads:

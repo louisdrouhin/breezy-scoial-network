@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth-svc: ${{ steps.changes.outputs.auth-svc }}
+      user-svc: ${{ steps.changes.outputs.user-svc }}
+      post-svc: ${{ steps.changes.outputs.post-svc }}
+      notif-svc: ${{ steps.changes.outputs.notif-svc }}
+      feed-svc: ${{ steps.changes.outputs.feed-svc }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check file changes
+        id: changes
+        run: |
+          # Comparer avec le commit précédent
+          if [ "${{ github.event_name }}" = "push" ]; then
+            BASE="${{ github.event.before }}"
+            if [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              BASE=$(git rev-list --max-parents=0 HEAD)
+            fi
+          else
+            BASE="HEAD~1"
+          fi
+
+          # Vérifier les changements par service
+          echo "auth-svc=$(git diff --quiet $BASE..HEAD -- microservices/auth-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "user-svc=$(git diff --quiet $BASE..HEAD -- microservices/user-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "post-svc=$(git diff --quiet $BASE..HEAD -- microservices/post-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "notif-svc=$(git diff --quiet $BASE..HEAD -- microservices/notif-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "feed-svc=$(git diff --quiet $BASE..HEAD -- microservices/feed-svc Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+          echo "frontend=$(git diff --quiet $BASE..HEAD -- front Dockerfile .github/workflows && echo false || echo true)" >> $GITHUB_OUTPUT
+
+  build-auth-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.auth-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: auth-svc
+          tags: ghcr.io/${{ github.repository_owner }}/breezy-auth-svc:latest
+          push: true
+
+  build-user-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.user-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: user-svc
+          tags: ghcr.io/${{ github.repository_owner }}/breezy-user-svc:latest
+          push: true
+
+  build-post-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.post-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: post-svc
+          tags: ghcr.io/${{ github.repository_owner }}/breezy-post-svc:latest
+          push: true
+
+  build-notif-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.notif-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: notif-svc
+          tags: ghcr.io/${{ github.repository_owner }}/breezy-notif-svc:latest
+          push: true
+
+  build-feed-svc:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.feed-svc == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: feed-svc
+          tags: ghcr.io/${{ github.repository_owner }}/breezy-feed-svc:latest
+          push: true
+
+  build-frontend:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.frontend == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: frontend
+          tags: ghcr.io/${{ github.repository_owner }}/breezy-frontend:latest
+          push: true

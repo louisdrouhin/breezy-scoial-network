@@ -1,4 +1,10 @@
 packages:
   - 'microservices/*'
-  - 'gateway'
   - 'front'
+
+injectWorkspacePackages: true
+
+pnpm:
+  confirmModulesPurge: false
+  allowBuilds:
+    sharp: true

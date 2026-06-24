@@ -1,26 +1,321 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes fadeInOut {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-10px);
   }
+  10% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-10px);
+  }
+}
+
+:root {
+  --background: #F4F5F4;
+  --foreground: #171717;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Mobile styles */
+@media (max-width: 767px) {
+  .desktop-navbar {
+    display: none !important;
+  }
+
+  .mobile-header {
+    display: block;
+  }
+
+  .mobile-bottom-nav {
+    display: block;
+  }
+
+  .home-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .home-center {
+    flex: 0 0 100% !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .home-sidebar {
+    display: none !important;
+  }
+
+  .search-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .profile-container {
+    padding-top: 20px !important;
+    padding-right: 0 !important;
+    padding-bottom: 80px !important;
+    padding-left: 0 !important;
+  }
+
+  .profile-header {
+    margin-bottom: 20px;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    margin-top: -20px !important;
+  }
+
+  /* Remove border radius from profile card on mobile */
+  .profile-header > div > div {
+    border-radius: 0 !important;
+  }
+
+  /* Adjust center column padding for profile page on mobile */
+  .profile-container > div {
+    padding-right: 16px !important;
+    padding-left: 16px !important;
+  }
+
+  .profile-container > div > .profile-header {
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+  }
+
+  .notifications-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .profile-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .settings-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .settings-content {
+    flex: 0 0 100% !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .privacy-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .privacy-content {
+    flex: 0 0 100% !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .terms-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .terms-content {
+    flex: 0 0 100% !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .post-detail-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .post-detail-center {
+    flex: 0 0 100% !important;
+  }
+
+  .post-detail-sidebar {
+    display: none !important;
+  }
+
+  .comment-detail-container {
+    padding-top: 20px !important;
+    padding-right: 16px !important;
+    padding-bottom: 80px !important;
+    padding-left: 16px !important;
+  }
+
+  .comment-detail-center {
+    flex: 0 0 100% !important;
+  }
+
+  .comment-detail-sidebar {
+    display: none !important;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 768px) {
+  .desktop-navbar {
+    display: block;
+  }
+
+  .mobile-header {
+    display: none !important;
+  }
+
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+
+  .home-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 20px !important;
+    padding-left: 320px !important;
+  }
+
+  .home-center {
+    flex: 0 0 80% !important;
+    padding-right: 20px !important;
+    padding-left: 20px !important;
+  }
+
+  .home-sidebar {
+    display: block !important;
+    flex: 0 0 20% !important;
+  }
+
+  .search-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 20px !important;
+    padding-left: 320px !important;
+  }
+
+  .profile-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 20px !important;
+    padding-left: 320px !important;
+  }
+
+  .profile-header {
+    padding-top: 20px !important;
+  }
+
+  .notifications-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 20px !important;
+    padding-left: 320px !important;
+  }
+
+  .settings-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 80px !important;
+    padding-left: 320px !important;
+  }
+
+  .settings-content {
+    flex: 0 0 100% !important;
+    padding-right: 20px !important;
+    padding-left: 20px !important;
+  }
+
+  .privacy-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 80px !important;
+    padding-left: 320px !important;
+  }
+
+  .privacy-content {
+    flex: 0 0 100% !important;
+    padding-right: 20px !important;
+    padding-left: 20px !important;
+  }
+
+  .terms-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 80px !important;
+    padding-left: 320px !important;
+  }
+
+  .terms-content {
+    flex: 0 0 100% !important;
+    padding-right: 20px !important;
+    padding-left: 20px !important;
+  }
+
+  .post-detail-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 20px !important;
+    padding-left: 320px !important;
+  }
+
+  .post-detail-center {
+    flex: 0 0 80% !important;
+    padding-right: 20px !important;
+    padding-left: 20px !important;
+  }
+
+  .post-detail-sidebar {
+    display: block !important;
+    flex: 0 0 20% !important;
+  }
+
+  .comment-detail-container {
+    padding-top: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: 20px !important;
+    padding-left: 320px !important;
+  }
+
+  .comment-detail-center {
+    flex: 0 0 80% !important;
+    padding-right: 20px !important;
+    padding-left: 20px !important;
+  }
+
+  .comment-detail-sidebar {
+    display: block !important;
+    flex: 0 0 20% !important;
+  }
 }
