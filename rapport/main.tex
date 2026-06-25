@@ -1,0 +1,518 @@
+\documentclass{cesi}
+
+\cesisetup{
+  author      = {Louis DROUHIN, Owen BOUDON, Sébastien RUET, Zakariya SAOULA},
+  title       = {Breezy},
+  subtitle    = {Réseau social distribué en architecture microservices},
+  description = {Rapport de projet — Développement d'applications distribuées},
+  typedoc     = {RAPPORT}
+}
+
+\begin{document}
+
+\cesititlepage
+
+\tableofcontents
+\newpage
+
+% =============================================================
+\section{Introduction}
+% =============================================================
+
+\subsection{Contexte du module et du projet}
+
+Ce rapport présente le travail réalisé dans le cadre du projet Fil Rouge du module
+\emph{Développement d'applications distribuées}. Ce projet consiste à développer \textbf{Breezy},
+un réseau social léger inspiré de Twitter/X.
+
+Celui-ci se doit d'être robuste et scalable, en s'appuyant sur une architecture en
+microservices plutôt que sur un monolithe applicatif.
+
+\subsection{Objectifs et attentes du projet}
+
+Le cahier des charges fourni en début de séquence définit Breezy comme un réseau
+social inspiré de Twitter, dont le périmètre fonctionnel est découpé en
+fonctionnalités primaires (obligatoires) et secondaires (optionnelles). Les
+fonctionnalités primaires couvrent le socle minimal d'un réseau social viable :
+
+\begin{itemize}
+  \item création de compte et authentification sécurisée ;
+  \item publication de messages courts (280 caractères) ;
+  \item affichage des messages sur le profil de l'utilisateur ;
+  \item fil d'actualité chronologique des comptes suivis ;
+  \item interactions sociales de base : like, commentaire, réponse à un commentaire,
+        follow/unfollow ;
+  \item profil utilisateur avec informations de base.
+\end{itemize}
+
+\subsection{Présentation de l'équipe}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{l X}
+\toprule
+\textbf{Membre} & \textbf{Responsabilité principale} \\
+\midrule
+Louis DROUHIN     & \texttt{auth-svc} (authentification, JWT), \texttt{feed-svc}, et front-end \\
+Sébastien RUET    & \texttt{user-svc} (profils, follow), gateway Nginx et front-end \\
+Owen BOUDON       & \texttt{notif-svc} (notifications) \\
+Zakariya SAOULA   & \texttt{post-svc} (publications, commentaires) \\
+\bottomrule
+\end{tabularx}
+\caption{Répartition des responsabilités au sein de l'équipe}
+\end{table}
+
+Cette répartition suit le découpage naturel de l'architecture en microservices : à
+partir du moment où les contrats d'API entre services ont été fixés, chaque membre a
+pu avancer en parallèle sur son service sans dépendance bloquante sur le
+travail des autres, à l'exception du front-end qui consomme l'ensemble des API.
+
+\subsection{Périmètre retenu et hors-scope justifié}
+
+Le cahier des charges propose un large éventail de fonctionnalités secondaires
+(messagerie privée, médias riches, signalement de contenu, interface multi-langues,
+thèmes personnalisés, suspension de comptes...). Conscients de la charge de travail
+que représenterait leur implémentation complète au regard du temps imparti, nous avons
+fait le choix de retirer volontairement plusieurs fonctionnalités du périmètre,
+plutôt que de les implémenter partiellement ou de manière peu aboutie.
+
+\begin{infobox}
+\textbf{Fonctionnalités non développées, et raisons :}
+\begin{enumerate}[label=\textbullet, leftmargin=1.4em, itemsep=4pt, topsep=6pt]
+  \item \textbf{Vidéos sur les posts} : complexité de stockage et de traitement de
+        fichiers non proportionnée au bénéfice pour cette itération,
+        cependant les images et GIF sont pris en charge ;
+  \item \textbf{Signalement de contenu et modération (suppression de posts, bannissements)} :
+        nécessite un back-office supplémentaire et donc du temps supplémentaire,
+        qui pourra cependant être développé dans un second temps ;
+  \item \textbf{Thème sombre} : complexité de la conversion d'une palette de couleur en
+        mode sombre, qui n'apporte pas de valeur fonctionnelle directe pour cette itération ;
+  \item \textbf{Messagerie privée} : fonctionnalité complète à part entière
+        (modèle de données, chiffrement éventuel) repoussée en évolution future.
+\end{enumerate}
+\end{infobox}
+
+Ce choix de périmètre a été tranché collectivement et documenté dès le début du
+développement, afin qu'aucun membre de l'équipe ne réintroduise une de ces
+fonctionnalités par anticipation sans concertation.
+
+\newpage
+% =============================================================
+\section{Analyse des besoins et fonctionnalités}
+% =============================================================
+
+\subsection{User stories et hiérarchisation}
+
+Les fonctionnalités du cahier des charges sont exprimées sous forme de user stories
+(« En tant que..., je veux..., afin de... »), ce qui a permis de prioriser le
+développement par criticité plutôt que par ordre d'apparition dans le document.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{l X l}
+\toprule
+\textbf{Code} & \textbf{Fonctionnalité} & \textbf{Priorité} \\
+\midrule
+Fx1  & Création de compte avec validation        & Primaire \\
+Fx2  & Authentification sécurisée (JWT)           & Primaire \\
+Fx3  & Publication de messages courts             & Primaire \\
+Fx4  & Affichage des messages sur le profil        & Primaire \\
+Fx5  & Fil chronologique des comptes suivis        & Primaire \\
+Fx6  & Like d'un post                              & Primaire \\
+Fx7  & Commentaire sur un post                     & Primaire \\
+Fx8  & Réponse à un commentaire                    & Primaire \\
+Fx9  & Follow / unfollow                           & Primaire \\
+Fx10 & Profil utilisateur (bio, avatar)             & Primaire \\
+Fx11 & Liste des messages publiés sur le profil    & Primaire \\
+Fx13 & Recherche par tags                          & Secondaire \\
+Fx14--Fx16 & Notifications (mention, like, follower) & Secondaire \\
+Fx18 & Ajout d'images aux messages                & Secondaire \\
+Fx22 & Interface multi-langues                    & Secondaire \\
+\bottomrule
+\end{tabularx}
+\caption{Hiérarchisation retenue des fonctionnalités}
+\end{table}
+
+\subsection{Matrice des permissions}
+
+La gestion des droits repose sur un rôle porté par chaque compte (\texttt{user} ou
+\texttt{admin}), vérifié à la gateway. Le tableau suivant synthétise les accès
+retenus pour les fonctionnalités implémentées.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{X c c}
+\toprule
+\textbf{Fonctionnalité} & \textbf{Visiteur} & \textbf{Utilisateur authentifié} \\
+\midrule
+Création de compte               & Oui & --- \\
+Authentification                  & Oui & Oui \\
+Publication de messages           & Non & Oui \\
+Consultation des profils/posts    & Non & Oui \\
+Like, commentaire, réponse        & Non & Oui \\
+Follow / unfollow                 & Non & Oui \\
+\bottomrule
+\end{tabularx}
+\caption{Matrice des permissions appliquée au périmètre retenu}
+\end{table}
+
+\subsection{Méthodologie et gestion de projet}
+
+L'équipe s'est appuyée sur des standards tout au long du développement :
+
+\begin{itemize}
+  \item un modèle de branches \textbf{Gitflow} (\texttt{main}, \texttt{develop},
+        \texttt{feature/<service>-<description>}, \texttt{fix/<description>}),
+        chaque fonctionnalité étant développée à partir de \texttt{develop} et jamais
+        directement sur \texttt{main} ;
+  \item des messages de commit normalisés selon la convention
+        \textbf{Conventional Commits} (\texttt{feat}, \texttt{fix}, \texttt{docs},
+        \texttt{refactor}, \texttt{test}, \texttt{chore}), avec le service concerné en
+        \emph{scope} (ex. \texttt{feat(auth-svc): ajoute la route de login}) ;
+  \item un \textbf{board Kanban} à trois colonnes principales
+        (À faire / En cours / Terminé), complété d'une colonne Blocage pour signaler
+        les dépendances entre services ;
+  \item un \textbf{dépôt privé} partagé entre les quatre membres.
+\end{itemize}
+
+\subsection{Détail des étapes et ressources mobilisées}
+
+Le projet a suivi la progression du module : modélisation de l'architecture
+(boucle API), développement du back-end REST par service, intégration de la
+sécurité JWT et de la conteneurisation Docker, puis développement du front-end
+React/Next.js consommant les API exposées par la gateway.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{l X}
+\toprule
+\textbf{Catégorie} & \textbf{Ressources mobilisées} \\
+\midrule
+Langage / runtime   & JavaScript / TypeScript, Node.js \\
+Back-end            & Express.js, Sequelize, Mongoose, jsonwebtoken \\
+Bases de données    & PostgreSQL (\texttt{auth-svc}, \texttt{user-svc}),
+                       MongoDB (\texttt{post-svc}, \texttt{notif-svc}) \\
+Front-end            & React, Next.js \\
+Infrastructure       & Docker, Docker Compose, Nginx (reverse proxy) \\
+Outillage            & pnpm (monorepo), Git, GitHub (dépôt, Issues, Projects) \\
+\bottomrule
+\end{tabularx}
+\caption{Ressources techniques mobilisées pour le projet}
+\end{table}
+
+\newpage
+% =============================================================
+\section{Architecture du système}
+% =============================================================
+
+\subsection{Vue d'ensemble et justification du choix microservices}
+
+Le sujet imposait de réfléchir au choix d'une architecture logicielle adaptée,
+entre monolithique et microservices. Nous avons retenu une architecture en
+microservices, chaque service disposant de sa propre base de données, 
+pour les raisons suivantes :
+
+\begin{itemize}
+  \item \textbf{isolation des responsabilités} : authentification, gestion de profils,
+        publications et notifications sont des domaines fonctionnels distincts, avec
+        des contraintes de cohérence et de volumétrie différentes ;
+  \item \textbf{parallélisation du développement} : le découpage par service a permis
+        à chaque membre de l'équipe de travailler de façon autonome dès que les
+        contrats d'API ont été stabilisés ;
+  \item \textbf{portabilité} : chaque service est conteneurisé indépendamment, ce qui
+        facilite un futur déploiement sur un orchestrateur (cf. axes d'amélioration).
+\end{itemize}
+
+\subsection{Schéma d'architecture}
+
+\begin{infobox}
+\textbf{Architecture retenue} : un point d'entrée HTTP unique (Nginx) route les
+requêtes vers cinq services métier, isolés du frontend sur leur propre réseau docker
+\texttt{backend} et disposant (sauf \texttt{feed-svc}) de sa propre base de données.
+\end{infobox}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{l l l}
+\toprule
+\textbf{Service} & \textbf{Rôle} & \textbf{Port par défaut} \\
+\midrule
+\texttt{auth-svc}  & Authentification, JWT             & 3001 \\
+\texttt{user-svc}  & Profils, relations follow         & 3002 \\
+\texttt{post-svc}  & Publications, commentaires        & 3003 \\
+\texttt{notif-svc} & Notifications                     & 3004 \\
+\texttt{feed-svc}  & Fil d'actualité (sans base)        & 3005 \\
+Frontend Next.js   & Interface utilisateur             & 3000 \\
+Nginx (gateway)    & Point d'entrée, reverse proxy     & 80 \\
+\bottomrule
+\end{tabularx}
+\caption{Services et ports de l'architecture Breezy}
+\end{table}
+
+Le client ne dialogue jamais directement avec un service métier : toutes les
+requêtes transitent par Nginx, qui les redirige selon le préfixe de route
+(\texttt{/api/auth}, \texttt{/api/users}, \texttt{/api/posts},
+\texttt{/api/notifications}, \texttt{/api/feed}). Aucun service backend n'est
+exposé directement à l'extérieur du réseau Docker.
+
+\subsection{Stack technique par service}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{l l l X}
+\toprule
+\textbf{Service} & \textbf{Moteur} & \textbf{ORM/ODM} & \textbf{Raison du choix} \\
+\midrule
+\texttt{auth-svc}  & PostgreSQL & Sequelize & Données critiques, contraintes fortes,
+                                              transactions ACID \\
+\texttt{user-svc}  & PostgreSQL & Sequelize & Le graphe de follow est un
+                                              many-to-many relationnel classique \\
+\texttt{post-svc}  & MongoDB    & Mongoose  & Volume d'écriture élevé, structure
+                                              semi-flexible \\
+\texttt{notif-svc} & MongoDB    & Mongoose  & Fort volume d'écriture, payload
+                                              variable selon le type de notification \\
+\texttt{feed-svc}  & ---        & ---       & Calculé à la volée, pas de
+                                              persistance propre \\
+\bottomrule
+\end{tabularx}
+\caption{Choix technologiques par service et justification}
+\end{table}
+
+\subsection{Modèle de données et cohérence inter-services}
+
+Le \texttt{username} constitue la clé de cohérence partagée entre tous les
+services :
+
+\begin{itemize}
+  \item Il est immuable : aucune route de modification de username n'existe,
+        dans aucun service ;
+  \item Il est la clé primaire des entités utilisateur (\texttt{Account}
+        dans \texttt{auth-svc}, \texttt{Profile} dans \texttt{user-svc}) ;
+  \item Les services métier (\texttt{post-svc}, \texttt{notif-svc}) ne font aucune
+        clé étrangère technique vers \texttt{auth-svc}/\texttt{user-svc} (impossible
+        de toute façon entre bases de données différentes) mais stockent simplement
+        le \texttt{username} en tant que champ simple
+        (\texttt{authorUsername}, \texttt{recipientUsername}) ;
+  \item La cohérence est donc applicative et non technique : c'est
+        \texttt{auth-svc} qui garantit l'unicité du username à la création de compte,
+        les autres services lui font confiance.
+\end{itemize}
+
+Un choix de modélisation notable concerne les commentaires dans \texttt{post-svc} :
+un commentaire est un \texttt{Post} comme un autre, simplement doté d'un
+champ \texttt{parentId} pointant vers le post auquel il répond. Ce choix évite de
+dupliquer un modèle \texttt{Comment} séparé et permet nativement des fils de
+discussion à profondeur illimitée.
+
+\subsection{Sécurité et gateway Nginx}
+
+Conformément aux standards vus dans le prosit JWT/Docker, l'authentification
+repose sur un mécanisme JWT délégué :
+
+\begin{enumerate}
+  \item Nginx intercepte chaque requête entrante et déclenche une directive
+        \texttt{auth\_request} ;
+  \item cette directive délègue la validation effective du jeton à
+        \texttt{auth-svc}, via une route dédiée (\texttt{/api/auth/validate}) ;
+  \item si le jeton est valide, Nginx transmet aux services métier deux en-têtes
+        de confiance : \texttt{X-User-Username} et \texttt{X-User-Role} ;
+  \item les services métier (\texttt{post-svc}, \texttt{notif-svc}, \texttt{user-svc},
+        \texttt{feed-svc}) ne réimplémentent pas de logique de vérification JWT : ils
+        font confiance aux en-têtes transmis par la gateway après validation.
+\end{enumerate}
+
+\begin{infobox}
+\textbf{Gateway = Nginx pur.} Aucun service Node.js personnalisé ne fait office
+d'API Gateway dans ce projet : Nginx, configuré en reverse proxy, assure à lui seul
+le routage et la délégation de l'authentification. Ce choix limite la surface de
+code à maintenir et s'appuie sur un composant éprouvé plutôt que de réinventer une
+brique de sécurité.
+\end{infobox}
+
+Les autres règles de sécurité transverses appliquées à l'ensemble des services
+Node.js sont : gestion d'erreurs centralisée (middleware d'erreur Express, jamais
+de stack trace brute renvoyée au client), CORS configuré explicitement, variables
+sensibles exclusivement via \texttt{dotenv}, et respect du niveau 2 du modèle de
+maturité de Richardson (verbes HTTP sémantiquement corrects, codes de statut HTTP).
+
+\subsection{Conteneurisation}
+
+L'ensemble des services est orchestré via Docker Compose, avec un fichier dédié au
+développement (hot-reload par bind-mount du code source) et un fichier dédié à la
+production (\texttt{docker-compose.prod.yml}, images distinctes par microservice,
+construites et hébérgées sur le Docker Registry de Github via Github Actions).
+Deux réseaux Docker isolent le frontend du backend, Nginx faisant le pont entre les
+deux. Des \emph{profiles} Docker Compose permettent de ne démarrer que les services
+utiles pour du développment ciblé plutôt que l'intégralité de la stack.
+
+\newpage
+% =============================================================
+\section{Réalisation}
+% =============================================================
+
+Cette section détaille, service par service, les fonctionnalités implémentées et
+les choix de mise en œuvre. Chaque sous-section a été rédigée par le ou les membres
+ayant porté le développement du service correspondant.
+
+\subsection{\texttt{auth-svc} : Authentification et JWT (Louis DROUHIN)}
+
+\texttt{auth-svc} couvre Fx1 (création de compte) et Fx2 (authentification sécurisée).
+Il ne stocke que les informations strictement nécessaires à l'authentification :
+\texttt{username}, \texttt{email}, \texttt{passwordHash}, \texttt{role},
+\texttt{active}. Toute donnée de profil (bio, avatar) relève de \texttt{user-svc}.
+
+\begin{itemize}
+  \item inscription avec hachage du mot de passe (jamais stocké en clair) ;
+  \item connexion délivrant un jeton JWT signé, vérifié ensuite côté Nginx via
+        \texttt{auth\_request} ;
+  \item déconnexion par suppression de la ligne de refresh token en base, sans champ
+        de révocation dédié, choix retenu pour limiter la complexité du modèle de
+        données au regard du périmètre du projet.
+\end{itemize}
+
+\subsection{\texttt{user-svc} : Profils utilisateurs (Sébastien RUET)}
+
+\texttt{user-svc} couvre Fx9 (follow/unfollow) et Fx10 (profil utilisateur). Le
+graphe de relations de follow est modélisé de façon relationnelle classique
+(table d'association many-to-many), ce qui justifie le choix de PostgreSQL plutôt
+que MongoDB pour ce service.
+
+\subsection{\texttt{post-svc} : Publications et commentaires (Zakariya SAOULA)}
+
+\texttt{post-svc} couvre Fx3 (publication de messages courts), Fx4 (affichage sur le
+profil), Fx6 (like), Fx7 et Fx8 (commentaires et réponses). Le choix de MongoDB
+pour ce service est justifié par un volume d'écriture potentiellement élevé et une
+structure de données semi-flexible (un post peut porter un nombre variable de
+likes, de tags, de réponses).
+
+Le point de mise en œuvre central est le modèle unique \texttt{Post} avec champ
+\texttt{parentId} optionnel : un post racine a un \texttt{parentId} nul, un
+commentaire référence le post auquel il répond, et une réponse à un commentaire
+référence ce commentaire, sans limite de profondeur. Le compteur de réponses
+(\texttt{replyCount}) et de like (\texttt{likeCount}) est recalculé à chaque ajout/suppression
+pour éviter un comptage à la volée coûteux sur des fils profonds.
+
+\subsection{\texttt{notif-svc} : Notifications (Owen BOUDON)}
+
+\texttt{notif-svc} couvre Fx14 à Fx16 (notifications de mention, de like, de nouveau
+follower). Le choix de MongoDB se justifie par un fort volume d'écriture et un
+\emph{payload} variable selon le type de notification (une notification de mention
+ne porte pas les mêmes champs qu'une notification de like).
+
+Le service expose une route de consultation des notifications d'un utilisateur
+(authentifié via les en-têtes transmis par la gateway) ainsi qu'une route de
+marquage comme lues, sans dépendre directement des bases de données des autres
+services : la création d'une notification est déclenchée applicativement par
+\texttt{post-svc} ou \texttt{user-svc} au moment de l'action concernée.
+
+\subsection{\texttt{feed-svc} : Fil d'actualité (Louis DROUHIN)}
+
+\texttt{feed-svc} couvre Fx5 (fil chronologique des comptes suivis). C'est le seul
+service de l'architecture sans base de données propre : le fil est calculé
+à la volée (\emph{fan-out on read}). À chaque consultation :
+
+\begin{enumerate}
+  \item \texttt{feed-svc} interroge \texttt{user-svc} pour obtenir la liste des
+        comptes suivis par l'utilisateur courant ;
+  \item il interroge ensuite \texttt{post-svc} pour récupérer les posts de ces
+        comptes ;
+  \item les résultats sont triés par date et renvoyés au client.
+\end{enumerate}
+
+\begin{infobox}
+Ce choix de conception est documenté comme un compromis assumé plutôt qu'une
+contrainte technique : le \emph{fan-out on read} est plus simple à mettre en œuvre
+qu'un fil matérialisé, au prix d'un coût de lecture plus élevé. Il est cohérent
+avec le volume de données attendu dans le cadre du projet, et identifié comme axe
+d'amélioration en cas de montée en charge (cf. section 6).
+
+De plus, le fait qu'il soit
+dans un service dédié permet d'envisager un développement futur d'un algorithme
+de recommendation.
+\end{infobox}
+
+\subsection{Gateway Nginx (Sébastien RUET)}
+
+La configuration de la gateway Nginx (\texttt{gateway/nginx.conf})
+définit le routage vers chaque service métier ainsi que la directive
+\texttt{auth\_request} déléguant la validation JWT à \texttt{auth-svc}, conformément
+au choix d'architecture présenté en section 3.5.
+
+\subsection{Front-end (Louis DROUHIN, Sébastien RUET)}
+
+Le front-end est développé en React/Next.js, avec une approche mobile-first. Il
+consomme exclusivement les API exposées via la gateway Nginx (jamais directement
+les services métier) et porte les écrans suivants : authentification (connexion,
+inscription), fil d'actualité, profil utilisateur, et les interactions sur les
+posts (publication, like, commentaire, réponse).
+
+\newpage
+% =============================================================
+\section{Difficultés rencontrées et solutions}
+% =============================================================
+
+\subsection{Choix techniques discutés en équipe}
+
+\begin{itemize}
+  \item \textbf{Fan-out on read vs fan-out on write} pour le fil d'actualité : le
+        choix du calcul à la volée a été préféré à un fil matérialisé pour limiter
+        la complexité du modèle de données dans le temps imparti, au prix d'une
+        charge de lecture plus élevée à chaque consultation du fil.
+  \item \textbf{Modélisation des commentaires} : la tentation initiale de créer une
+        entité \texttt{Comment} séparée de \texttt{Post} aurait limité la profondeur
+        des fils de discussion à un seul niveau ; le choix d'unifier les deux entités
+        sous un \texttt{Post} avec \texttt{parentId} a permis de lever cette
+        limitation sans complexifier le modèle de données.
+  \item \textbf{Délégation de la sécurité à la gateway} : centraliser la validation
+        JWT dans Nginx plutôt que de la dupliquer dans chaque service métier a
+        nécessité de figer tôt le contrat des en-têtes transmis
+        (\texttt{X-User-Username}, \texttt{X-User-Role}) pour que tous les services
+        s'alignent sans ambiguïté.
+\end{itemize}
+
+\subsection{Points de friction inter-services}
+
+Le développement en parallèle de cinq services par des membres différents a
+nécessité de fixer rapidement des conventions communes (arborescence de dossiers,
+format des routes, gestion des erreurs) afin d'éviter une divergence de pratiques
+entre services qui aurait complexifié l'intégration finale via la gateway. Le
+\texttt{username} comme clé de cohérence partagée entre services a constitué le
+principal point d'attention, en l'absence de clé étrangère technique possible entre
+des bases de données distinctes.
+
+\newpage
+% =============================================================
+\section{Conclusion}
+% =============================================================
+
+\subsection{Bilan par rapport aux objectifs}
+
+Le projet Breezy a permis de mettre en application l'ensemble des compétences
+travaillées au long de la séquence : conception argumentée d'une architecture
+microservices, développement d'API REST de niveau 2 de maturité, sécurisation par
+JWT déléguée à une gateway, développement d'un front-end React mobile-first, et
+conteneurisation complète de l'environnement. L'ensemble des fonctionnalités
+primaires du cahier des charges (Fx1 à Fx11) a été couvert, dans le périmètre
+explicitement retenu par l'équipe.
+
+\subsection{Axes d'amélioration et évolutions potentielles}
+
+\begin{itemize}
+  \item \textbf{Fan-out on write} pour le fil d'actualité, si la charge de lecture
+        devenait significative, en matérialisant le fil de chaque utilisateur à
+        l'écriture plutôt qu'à la consultation ;
+  \item \textbf{Messagerie privée} (Fx17) et \textbf{signalement de contenu} (Fx20),
+        retirés du périmètre initial, pour renforcer la dimension communautaire et
+        la modération ;
+  \item \textbf{Vidéos} sur les posts (Fx19) ;
+  \item \textbf{Révocation explicite des jetons} (liste de révocation) plutôt que la
+        simple suppression de la ligne en base, pour une gestion plus fine des
+        sessions multiples ;
+  \item \textbf{Migration vers un orchestrateur} (Kubernetes ou équivalent managé),
+        dans la continuité de la portabilité déjà recherchée par la conteneurisation
+        Docker, pour anticiper une montée en charge ;
+  \item \textbf{Tests automatisés} (unitaires et d'intégration) sur chaque service,
+        non couverts dans le temps imparti à cette itération.
+\end{itemize}
+
+\end{document}
