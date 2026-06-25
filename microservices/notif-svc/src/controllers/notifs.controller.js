@@ -1,4 +1,5 @@
 import Notification from "../models/notification.model.js"
+import { isKnownRole } from "../services/access.service.js"
 
 export const getNotifs = async (req, res) => {
     const username = req.get('x-user-username')
@@ -8,7 +9,7 @@ export const getNotifs = async (req, res) => {
         return res.status(400).json({ message: 'Missing arguments' })
     }
 
-    const allowedTypes = role?.toUpperCase() === 'USER' || role?.toUpperCase() === 'ADMIN' || role?.toUpperCase() === 'MOD'
+    const allowedTypes = isKnownRole(role)
         ? ['MENTION', 'LIKE', 'NEW_FOLLOWER', 'COMMENT']
         : ['MENTION']
 

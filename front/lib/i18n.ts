@@ -15,6 +15,7 @@ const en: Dict = {
   'common.update': 'Update',
 
   'nav.home': 'Home',
+  'nav.search': 'Search',
   'nav.profile': 'Profile',
   'nav.notifications': 'Notifications',
   'nav.settings': 'Settings',
@@ -80,6 +81,9 @@ const en: Dict = {
   'search.none': 'No results found for "{query}"',
   'search.noUsers': 'No users found',
   'search.tag': 'Search #{tag}',
+  'search.suggestions': 'Suggested users',
+  'search.users': 'Users',
+  'search.followingBadge': 'Following',
 
   'notifications.title': 'Notifications',
   'notifications.markAll': 'Mark all as read',
@@ -178,6 +182,7 @@ const fr: Dict = {
   'common.update': 'Mettre à jour',
 
   'nav.home': 'Accueil',
+  'nav.search': 'Recherche',
   'nav.profile': 'Profil',
   'nav.notifications': 'Notifications',
   'nav.settings': 'Réglages',
@@ -243,6 +248,9 @@ const fr: Dict = {
   'search.none': 'Aucun résultat pour "{query}"',
   'search.noUsers': 'Aucun utilisateur trouvé',
   'search.tag': 'Chercher #{tag}',
+  'search.suggestions': 'Utilisateurs suggérés',
+  'search.users': 'Utilisateurs',
+  'search.followingBadge': 'Abonné',
 
   'notifications.title': 'Notifications',
   'notifications.markAll': 'Tout marquer comme lu',

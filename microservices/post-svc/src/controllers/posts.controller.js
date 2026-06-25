@@ -1,6 +1,7 @@
 import Post from '../models/post.model.js'
 import Like from '../models/like.model.js'
 import { extractMentionUsernames, notifyLike, notifyComment, notifyMentions } from '../services/notif.service.js'
+import { canDeletePost, canEditPost } from '../services/access.service.js'
 
 const OBJECT_ID_RE = /^[0-9a-f]{24}$/i
 
@@ -238,7 +239,7 @@ export const updatePost = async (req, res) => {
   const post = await Post.findById(req.params.id)
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
   if (post.deleted) return res.status(410).json({ message: 'Post supprimé' })
-  if (post.authorUsername !== username) return res.status(403).json({ message: 'Interdit' })
+  if (!canEditPost({ username }, post.authorUsername)) return res.status(403).json({ message: 'Interdit' })
 
   const cleanMedia = sanitized.media === undefined ? post.media : sanitized.media
   if (!cleanContent && (!cleanMedia || cleanMedia.length === 0)) {
@@ -268,7 +269,7 @@ export const deletePost = async (req, res) => {
   if (!post) return res.status(404).json({ message: 'Post introuvable' })
   if (post.deleted) return res.status(204).send()
 
-  if (post.authorUsername !== username && role !== 'admin' && role !== 'mod') {
+  if (!canDeletePost({ username, role }, post.authorUsername)) {
     return res.status(403).json({ message: 'Interdit' })
   }
 
