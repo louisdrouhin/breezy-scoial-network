@@ -93,6 +93,10 @@ export interface Profile {
   updatedAt: string;
 }
 
+export interface SearchProfile extends Pick<Profile, 'username' | 'displayName' | 'bio' | 'avatarUrl' | 'bannerUrl'> {
+  isFollowing: boolean;
+}
+
 export interface FollowEntry {
   'followed.username': string;
   'followed.avatarUrl': string | null;
@@ -335,8 +339,12 @@ export const notifAPI = {
 // ----------------------------------------------------------------
 
 export const userAPI = {
-  search: async (q: string): Promise<Pick<Profile, 'username' | 'displayName' | 'avatarUrl'>[]> => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/users/search?q=${encodeURIComponent(q)}`);
+  search: async (q = '', limit = 10): Promise<SearchProfile[]> => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    const cleanQuery = q.trim();
+    if (cleanQuery) params.set('q', cleanQuery);
+
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/users/search?${params}`);
     if (!res.ok) return [];
     return res.json();
   },

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { House, CircleUser, Bell, Settings, LogOut } from "lucide-react";
+import { House, Search, CircleUser, Bell, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifCount } from "@/contexts/NotifContext";
 import { userAPI } from "@/lib/api";
@@ -50,6 +50,21 @@ export default function Navbar() {
       >
         <House size={24} />
         <span>{t('nav.home')}</span>
+      </Link>
+      <Link
+        href="/search"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          color: "white",
+          textDecoration: "none",
+          paddingLeft: "24px",
+        }}
+        className="font-rubik"
+      >
+        <Search size={24} />
+        <span>{t('nav.search')}</span>
       </Link>
       <Link
         href={user ? `/profile/${user.username}` : "/profile"}

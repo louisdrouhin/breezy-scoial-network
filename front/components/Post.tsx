@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Film, Heart, ImagePlus, Link2, MessageCircle, Pencil, Share2, Trash2, X } from 'lucide-react';
 import { postAPI, MediaItem } from '@/lib/api';
-import { useAuth } from '@/hooks/useAuth';
 import ConfirmModal from '@/components/ConfirmModal';
 import GifPickerModal from '@/components/GifPickerModal';
 import RichPostText from '@/components/RichPostText';
 import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE, mediaItemFromUrl } from '@/lib/media';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAccessStore } from '@/stores/accessStore';
 
 interface PostProps {
   id?: string;
@@ -42,10 +42,12 @@ export default function Post({
   initialIsLiked = false,
   onDeleted,
 }: PostProps) {
-  const { user } = useAuth();
   const { language, t } = useLanguage();
+  const canEditByAccess = useAccessStore(state => state.canEditPost(username));
+  const canDeleteByAccess = useAccessStore(state => state.canDeletePost(username));
   const [currentDeleted, setCurrentDeleted] = useState(deleted);
-  const isOwner = user?.username === username && !currentDeleted;
+  const canEdit = canEditByAccess && !currentDeleted;
+  const canDelete = canDeleteByAccess && !currentDeleted;
 
   const [likes, setLikes] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(initialIsLiked);
@@ -328,24 +330,28 @@ export default function Post({
             {formatDate(createdAt)}
           </p>
         </div>
-        {isOwner && !isEditing && (
+        {(canEdit || canDelete) && !isEditing && (
           <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-            <button
-              onClick={beginEdit}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
-              title={t('post.edit')}
-            >
-              <Pencil size={15} />
-            </button>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
-              title={t('common.delete')}
-              onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#999')}
-            >
-              <Trash2 size={15} />
-            </button>
+            {canEdit && (
+              <button
+                onClick={beginEdit}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
+                title={t('post.edit')}
+              >
+                <Pencil size={15} />
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#999' }}
+                title={t('common.delete')}
+                onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#999')}
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@ import { Rubik, Alata } from "next/font/google";
 import "./globals.css";
 
 import LayoutWrapper from "@/components/LayoutWrapper";
+import AccessStoreBridge from "@/components/AccessStoreBridge";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { NotifProvider } from "@/contexts/NotifContext";
@@ -27,6 +28,7 @@ export default function RootLayout({
     <html lang="en" className={`${rubik.variable} ${alata.variable}`}>
       <body>
         <AuthProvider>
+          <AccessStoreBridge />
           <LanguageProvider>
             <NotifProvider>
               <LayoutWrapper>{children}</LayoutWrapper>

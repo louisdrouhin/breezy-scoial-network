@@ -1,23 +1,21 @@
 'use client';
 
 import { use, useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import ProfileHeader from '@/components/ProfileHeader';
 import Post from '@/components/Post';
 import { userAPI, postAPI, Profile, Post as PostType, FollowEntry, FollowerEntry } from '@/lib/api';
-import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAccessStore } from '@/stores/accessStore';
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
 }
 
 export default function ProfilePage({ params }: ProfilePageProps) {
-  const router = useRouter();
   const { username } = use(params);
-  const { user: currentUser } = useAuth();
-  const isOwnProfile = currentUser?.username === username;
+  const currentUsername = useAccessStore(state => state.user?.username ?? null);
+  const isOwnProfile = useAccessStore(state => state.isOwner(username));
+  const canFollowProfile = useAccessStore(state => state.canFollow(username));
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<PostType[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'replies'>('posts');
@@ -51,14 +49,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   useEffect(() => {
     const load = async () => {
       try {
-        const isSelf = currentUser?.username === username;
         const requests: Promise<unknown>[] = [
           userAPI.getProfile(username),
           userAPI.getFollowers(username),
           userAPI.getFollowing(username),
         ];
-        if (!isSelf && currentUser?.username) {
-          requests.push(userAPI.getFollowing(currentUser.username));
+        if (!isOwnProfile && currentUsername) {
+          requests.push(userAPI.getFollowing(currentUsername));
         }
         const results = await Promise.all(requests);
         const [profileData, followers, following, myFollowing] = results as [Profile, FollowerEntry[], FollowEntry[], FollowEntry[] | undefined];
@@ -75,7 +72,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       }
     };
     load();
-  }, [username, currentUser?.username]);
+  }, [username, currentUsername, isOwnProfile]);
 
   // Charge la première page de l'onglet actif (et à chaque changement d'onglet).
   useEffect(() => {
@@ -184,7 +181,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             onProfileUpdate={isOwnProfile ? handleProfileUpdate : undefined}
             isFollowing={isFollowing}
             followLoading={followLoading}
-            onFollowToggle={!isOwnProfile && currentUser ? handleFollowToggle : undefined}
+            onFollowToggle={canFollowProfile ? handleFollowToggle : undefined}
           />
         </div>
 

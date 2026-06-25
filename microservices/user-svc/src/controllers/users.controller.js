@@ -1,6 +1,31 @@
 import { Op } from "sequelize";
+import sequelize from "../config/db.config.js";
 import { Profile, Follow } from "../models/index.js";
 import { notifyFollow } from "../services/notif.service.js";
+
+const publicProfileAttributes = ['username', 'displayName', 'bio', 'avatarUrl', 'bannerUrl'];
+
+const attachFollowStatus = async (profiles, viewerUsername) => {
+  if (!viewerUsername || profiles.length === 0) {
+    return profiles.map(profile => ({ ...profile.get({ plain: true }), isFollowing: false }));
+  }
+
+  const usernames = profiles.map(profile => profile.username);
+  const follows = await Follow.findAll({
+    where: {
+      followerUsername: viewerUsername,
+      followedUsername: { [Op.in]: usernames },
+    },
+    attributes: ['followedUsername'],
+    raw: true,
+  });
+  const followedUsernames = new Set(follows.map(follow => follow.followedUsername));
+
+  return profiles.map(profile => {
+    const data = profile.get({ plain: true });
+    return { ...data, isFollowing: followedUsernames.has(data.username) };
+  });
+};
 
 export const getPublicProfile = async (req, res) => {
   const { username } = req.validated;
@@ -73,21 +98,27 @@ export const uploadBanner = async (req, res) => {
 };
 
 export const searchUsers = async (req, res) => {
-  const q = (req.query.q || '').trim();
-  if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
+  const q = (req.query.q || '').toString().trim();
+  const viewerUsername = req.user?.username;
+  const defaultLimit = q ? 10 : 12;
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || defaultLimit));
+
+  const where = viewerUsername ? { username: { [Op.ne]: viewerUsername } } : {};
+  if (q) {
+    where[Op.or] = [
+      { username: { [Op.iLike]: `%${q}%` } },
+      { displayName: { [Op.iLike]: `%${q}%` } },
+    ];
+  }
 
   const profiles = await Profile.findAll({
-    where: {
-      [Op.or]: [
-        { username: { [Op.iLike]: `%${q}%` } },
-        { displayName: { [Op.iLike]: `%${q}%` } },
-      ],
-    },
-    attributes: ['username', 'displayName', 'avatarUrl'],
-    limit: 10,
+    where,
+    attributes: publicProfileAttributes,
+    order: q ? [['username', 'ASC']] : sequelize.random(),
+    limit,
   });
 
-  return res.json(profiles);
+  return res.json(await attachFollowStatus(profiles, viewerUsername));
 };
 
 export const getNotifPrefs = async (req, res) => {
